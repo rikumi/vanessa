@@ -1,4 +1,14 @@
 {
+  "name": "vanessa",
+  "version": "1.0.0",
+  "description": "A Man-in-the-Middle proxy tool.",
+  "main": "index.ts",
+  "repository": "https://github.com/rikumi/vanessa",
+  "author": "rikumi <riku.mi@outlook.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node index.js --port 8672"
+  },
   "devDependencies": {
     "@types/configstore": "^4.0.0",
     "@types/node": "^11.13.0"
