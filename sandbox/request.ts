@@ -4,7 +4,7 @@ import * as HTTPAgent from 'http-proxy-agent';
 import * as HTTPSAgent from 'https-proxy-agent';
 import * as SOCKSAgent from 'socks-proxy-agent';
 import { getStreamOperations, overwriteStream } from './stream';
-import { URL } from 'url'; 
+import { URL } from 'url';
 import vanessa from '..';
 
 export default function getRequest(ctx: IContext) {
@@ -49,7 +49,7 @@ export default function getRequest(ctx: IContext) {
                     req.agent = vanessa.httpAgent;
                 }
                 req.headers.host = req.host = url.hostname;
-                (<number | null> req.port) = url.port ? parseInt(url.port) : (ctx.isSSL ? 80 : 443);
+                (<number | null>req.port) = url.port ? parseInt(url.port) : (ctx.isSSL ? 80 : 443);
                 req.path = url.pathname + (url.search ? '?' + url.search : '') + url.hash;
             }
         },

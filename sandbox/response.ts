@@ -3,8 +3,11 @@ import { IContext } from 'http-mitm-proxy';
 import * as HTTPStatus from 'http-status';
 
 export async function getResponse(ctx: IContext) {
-    await new Promise(r => {
-        ctx.onResponse((_, cb) => { r(); cb(); });
+    await new Promise((r) => {
+        ctx.onResponse((_, cb) => {
+            r();
+            cb();
+        });
         ctx.onError(() => r());
     });
 
@@ -17,30 +20,33 @@ export async function getResponse(ctx: IContext) {
             res.statusCode = code;
         },
         get headers() {
-            return new Proxy({}, {
-                get(_, key) {
-                    return res.getHeader(key.toString());
-                },
-                set(_, key, value_1) {
-                    res.setHeader(key.toString(), value_1);
-                    return true;
-                },
-                deleteProperty(_, key) {
-                    if (res.hasHeader(key.toString())) {
-                        res.removeHeader(key.toString());
+            return new Proxy(
+                {},
+                {
+                    get(_, key) {
+                        return res.getHeader(key.toString());
+                    },
+                    set(_, key, value) {
+                        res.setHeader(key.toString(), value);
                         return true;
+                    },
+                    deleteProperty(_, key) {
+                        if (res.hasHeader(key.toString())) {
+                            res.removeHeader(key.toString());
+                            return true;
+                        }
+                        return false;
                     }
-                    return false;
                 }
-            });
+            );
         },
         set headers(headers) {
             for (let key in res.getHeaders()) {
                 res.removeHeader(key);
             }
-            for (let key_1 in headers) {
-                if ({}.hasOwnProperty.call(headers, key_1)) {
-                    res.setHeader(key_1, headers[key_1]);
+            for (let key in headers) {
+                if ({}.hasOwnProperty.call(headers, key)) {
+                    res.setHeader(key, headers[key]);
                 }
             }
         },
@@ -58,8 +64,8 @@ export function setResponse(ctx: IContext, obj: any) {
     let status: number, headers: any, data: string;
     if (obj == null) {
         status = 404;
-        headers = { "Content-Type": "text/plain" };
-        data = "404 Not Found\n";
+        headers = { 'Content-Type': 'text/plain' };
+        data = '404 Not Found\n';
     } else {
         if (typeof obj === 'number') {
             obj = { status: obj };

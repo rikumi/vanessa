@@ -1,12 +1,16 @@
 import * as Store from 'configstore';
 
-const store = new Store('rikumi.vanessa', {
-    rules: {
-        default: '',
-        global: ''
+const store = new Store(
+    'rikumi.vanessa',
+    {
+        rules: {
+            default: '',
+            global: ''
+        },
+        sessions: {}
     },
-    sessions: {}
-}, { globalConfigPath: true });
+    { globalConfigPath: true }
+);
 
 let sessions = store.get('sessions');
 for (let key in sessions) {
