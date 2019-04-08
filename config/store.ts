@@ -1,23 +1,16 @@
 import * as Store from 'configstore';
 
-const store = new Store(
-    'rikumi.vanessa',
-    {
-        rules: {
-            default: '',
-            global: ''
-        },
-        sessions: {}
-    },
-    { globalConfigPath: true }
-);
+const store = new Store('rikumi.vanessa', {}, {
+    globalConfigPath: true
+});
 
-let sessions = store.get('sessions');
+let sessions = store.all;
 for (let key in sessions) {
-    if (sessions[key].expiration > Date.now()) {
+    let session = sessions[key];
+    if (session.expires && session.expires < Date.now()) {
         delete sessions[key];
     }
 }
-store.set('sessions', sessions);
+store.all = sessions;
 
 export default store;

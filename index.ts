@@ -4,6 +4,7 @@ import logger from './handler/logger';
 import ivy from './config/ivy';
 
 const vanessa = MITMProxy();
+vanessa.use(MITMProxy.gunzip);
 vanessa.use(rule);
 vanessa.use(logger);
 vanessa.listen(ivy);

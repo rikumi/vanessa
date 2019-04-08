@@ -1,7 +1,7 @@
 import { IContext } from 'http-mitm-proxy';
 import { Context, createContext } from 'vm';
 import getRequest from './request';
-import { getResponse, setResponse } from './response';
+import getResponse from './response';
 
 export default function createSandbox(ctx: IContext): Context {
     let sandbox = {
@@ -11,9 +11,6 @@ export default function createSandbox(ctx: IContext): Context {
         },
         get res() {
             return getResponse(ctx);
-        },
-        set res(obj) {
-            setResponse(ctx, obj);
         }
     };
 

@@ -18,7 +18,11 @@ export default function getRequest(ctx: IContext) {
             return req.host;
         },
         set realHost(host) {
-            req.host = host;
+            let [hostname, port] = host.split(':');
+            req.host = hostname;
+            if (port) {
+                (<number>req.port) = parseInt(port)
+            }
         },
         get virtualHost() {
             return (req.headers.host || req.host);
@@ -88,25 +92,24 @@ export default function getRequest(ctx: IContext) {
             return null;
         },
         set proxy(proxy) {
-            let match = /^(PAC|PROXY|HTTP|HTTPS|SOCKS)\s+(.*)$/i.exec(proxy);
             let type: string;
-            if (match) {
-                type = match[1].toUpperCase().replace('PROXY', 'HTTP');
-                proxy = match[2];
+            if (/(^pac\+)|(\.pac$)/i.test(proxy)) {
+                type = 'PAC';
             } else {
-                proxy = proxy.trim();
-                if (/(^pac\+)|(\.pac$)/i.test(proxy)) {
-                    type = 'PAC';
-                } else {
-                    type = 'HTTP';
+                let match = /^(PROXY|HTTP|HTTPS|SOCKS)(\s+|:\/\/)(.*)$/i.exec(proxy);
+                if (match) {
+                    type = match[1].toUpperCase().replace('PROXY', 'HTTP');
+                    proxy = match[3];
                 }
             }
+            proxy = proxy.trim();
+
             if (type === 'HTTP') {
-                req.agent = new HTTPAgent(proxy);
+                req.agent = new HTTPAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'HTTPS') {
-                req.agent = new HTTPSAgent(proxy);
+                req.agent = new HTTPSAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'SOCKS') {
-                req.agent = new SOCKSAgent(proxy);
+                req.agent = new SOCKSAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'PAC') {
                 req.agent = new PACAgent(proxy);
             }
