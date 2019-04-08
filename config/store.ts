@@ -1,6 +1,6 @@
 import * as Store from 'configstore';
 
-const store = new Store('rikumi.vanessa', {}, {
+const store = new Store('vanessa', {}, {
     globalConfigPath: true
 });
 
