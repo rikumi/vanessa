@@ -1,9 +1,10 @@
-import rs = require('replacestream');
-import intoStream = require('into-stream');
-import collectAll = require('collect-all');
-import brake = require('brake');
-import delay = require('delay-stream');
-import duplexify = require('duplexify');
+import streamReplace = require('replacestream');
+import streamCollect = require('collect-all');
+import streamThrottle = require('brake');
+import streamDelay = require('delay-stream');
+import toStream = require('into-stream');
+import toDuplex = require('duplexify');
+import PassthroughDuplex = require('minipass');
 
 import { NullWritable } from 'null-writable';
 import { Transform } from 'stream';
@@ -12,7 +13,7 @@ export function overwriteStream(pipeFunc: (Transform) => any, data: any) {
     if (typeof data === 'object' && !(data instanceof Buffer)) {
         data = JSON.stringify(data);
     }
-    pipeFunc(duplexify(new NullWritable(), intoStream(data)));
+    pipeFunc(toDuplex(new NullWritable(), toStream(data)));
     return true;
 }
 
@@ -24,7 +25,7 @@ export function getStreamOperations(pipeFunc: (Transform) => any) {
         },
         transformAll(map: (input: string) => string) {
             pipeFunc(
-                collectAll((all: Buffer) => {
+                streamCollect((all: Buffer) => {
                     return new Buffer(map(all.toString()));
                 })
             );
@@ -35,19 +36,36 @@ export function getStreamOperations(pipeFunc: (Transform) => any) {
             if (find.constructor.name === 'RegExp') {
                 find = new RegExp(<RegExp>find, (<RegExp>find).flags);
             }
-            pipeFunc(rs(find, replace));
+            pipeFunc(streamReplace(find, replace));
             return operations;
         },
         overwrite(data: string | Buffer) {
             overwriteStream(pipeFunc, data);
             return operations;
         },
+        prepend(data: string | Buffer) {
+            let dup = new PassthroughDuplex();
+            dup.write(data);
+            pipeFunc(dup);
+            return operations;
+        },
+        append(data: string | Buffer) {
+            let dup = new PassthroughDuplex();
+            pipeFunc(dup);
+            let end = dup.end.bind(dup);
+            dup.end = (chunk, encoding, cb) => {
+                dup.write(chunk, encoding);
+                dup.write(data);
+                end(null, null, cb);
+            }
+            return operations;
+        },
         delay(ms: number) {
-            pipeFunc(delay(ms));
+            pipeFunc(streamDelay(ms));
             return operations;
         },
         throttle(bytesPerSecond: number) {
-            pipeFunc(brake(bytesPerSecond));
+            pipeFunc(streamThrottle(bytesPerSecond));
             return operations;
         }
     };
