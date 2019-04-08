@@ -96,22 +96,33 @@ export default function getRequest(ctx: IContext) {
             if (/(^pac\+)|(\.pac$)/i.test(proxy)) {
                 type = 'PAC';
             } else {
-                let match = /^(PROXY|HTTP|HTTPS|SOCKS)(\s+|:\/\/)(.*)$/i.exec(proxy);
+                let match = /(PROXY|HTTP|HTTPS|SOCKS)(\s+|:\/\/)(.+)$/i.exec(proxy);
                 if (match) {
                     type = match[1].toUpperCase().replace('PROXY', 'HTTP');
-                    proxy = match[3];
+                    proxy = type.toLowerCase() + '://' + match[3].replace(/\/$/, '');
                 }
             }
-            proxy = proxy.trim();
-
-            if (type === 'HTTP') {
-                req.agent = <any>new HTTPAgent(proxy.replace(/\/$/, ''));
-            } else if (type === 'HTTPS') {
-                req.agent = <any>new HTTPSAgent(proxy.replace(/\/$/, ''));
+            if (type === 'HTTP' || type === 'HTTPS') {
+                if (ctx.isSSL) {
+                    req.agent = <any>new HTTPSAgent(proxy.replace(/\/$/, ''));
+                } else {
+                    req.agent = <any>new HTTPAgent(proxy.replace(/\/$/, ''));
+                }
             } else if (type === 'SOCKS') {
                 req.agent = <any>new SOCKSAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'PAC') {
-                req.agent = <any>new PACAgent(proxy);
+                let agent: any = new PACAgent(proxy);
+
+                // 修正 PACAgent 解析到 DIRECT 时建立 tls.connect 连接无法给出正确的 SNI 而收到错误证书的问题
+                // 这里重写 PACAgent 的 connect 方法，补齐 servername 参数
+                let connect = agent.callback.bind(agent);
+                agent.callback = (r, opts, fn) => {
+                    return connect(r, Object.assign(opts || {}, {
+                        servername: req.headers.host
+                    }), fn);
+                };
+
+                req.agent = agent;
             }
         },
         get data() {
