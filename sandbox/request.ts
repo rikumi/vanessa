@@ -1,8 +1,8 @@
 import { IContext } from 'http-mitm-proxy';
-import * as PACAgent from 'pac-proxy-agent';
-import * as HTTPAgent from 'http-proxy-agent';
-import * as HTTPSAgent from 'https-proxy-agent';
-import * as SOCKSAgent from 'socks-proxy-agent';
+import PACAgent = require('pac-proxy-agent');
+import HTTPAgent = require('http-proxy-agent');
+import HTTPSAgent = require('https-proxy-agent');
+import SOCKSAgent = require('socks-proxy-agent');
 import { getStreamOperations, overwriteStream } from './stream';
 import { URL } from 'url';
 import vanessa from '..';
@@ -105,13 +105,13 @@ export default function getRequest(ctx: IContext) {
             proxy = proxy.trim();
 
             if (type === 'HTTP') {
-                req.agent = new HTTPAgent(proxy.replace(/\/$/, ''));
+                req.agent = <any>new HTTPAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'HTTPS') {
-                req.agent = new HTTPSAgent(proxy.replace(/\/$/, ''));
+                req.agent = <any>new HTTPSAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'SOCKS') {
-                req.agent = new SOCKSAgent(proxy.replace(/\/$/, ''));
+                req.agent = <any>new SOCKSAgent(proxy.replace(/\/$/, ''));
             } else if (type === 'PAC') {
-                req.agent = new PACAgent(proxy);
+                req.agent = <any>new PACAgent(proxy);
             }
         },
         get data() {

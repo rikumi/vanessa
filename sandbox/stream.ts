@@ -1,9 +1,10 @@
-import * as rs from 'replacestream';
-import * as intoStream from 'into-stream';
-import * as collectAll from 'collect-all';
-import * as brake from 'brake';
-import * as delay from 'delay-stream';
-import * as duplexify from 'duplexify';
+import rs = require('replacestream');
+import intoStream = require('into-stream');
+import collectAll = require('collect-all');
+import brake = require('brake');
+import delay = require('delay-stream');
+import duplexify = require('duplexify');
+
 import { NullWritable } from 'null-writable';
 import { Transform } from 'stream';
 

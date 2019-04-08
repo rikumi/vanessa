@@ -1,6 +1,7 @@
-import { getStreamOperations, overwriteStream } from './stream';
+import HTTPStatus = require('http-status');
+
 import { IContext } from 'http-mitm-proxy';
-import * as HTTPStatus from 'http-status';
+import { getStreamOperations, overwriteStream } from './stream';
 
 interface IMockContext extends IContext {
     mockData?: string | Buffer;
