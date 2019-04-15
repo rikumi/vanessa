@@ -1,10 +1,9 @@
 import { IContext } from 'http-mitm-proxy';
-import store from '../config/store';
 import { runInContext, Context } from 'vm';
 import createSandbox from '../sandbox';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as moment from 'moment';
+import { homedir } from 'os';
 
 const defaultScriptData = `
 // Place your transforms of request before awaiting
@@ -18,8 +17,11 @@ await res;
 `.trim();
 
 const getScript = (name: string) => {
-    let dir = path.dirname(store.path);
-    let file = path.join(dir, name + '.js');
+    let root = path.join(homedir(), '.vanessa');
+    if (!fs.existsSync(root)) fs.mkdirSync(root);
+
+    let file = path.join(root, name + '.js');
+
     if (fs.existsSync(file)) {
         return fs.readFileSync(file).toString();
     } else {
@@ -29,7 +31,7 @@ const getScript = (name: string) => {
 }
 
 const runInAsyncContext = (script: string, context: Context) => {
-    script = '(async () => {\n' + script + '\n})()';
+    script = '(async () => {\n' + script + '\n})().catch(console.error)';
     try {
         runInContext(script, context);
     } catch (e) {
@@ -39,21 +41,17 @@ const runInAsyncContext = (script: string, context: Context) => {
 
 export default {
     onRequest: (ctx: IContext, callback) => {
-        let clientAddr = ctx.clientToProxyRequest.connection.address()['address'];
-        let sessions = store.all;
-        let session = sessions[clientAddr] || {};
-        let expires = +moment().startOf('day').add(2, 'weeks');
-        if (session.expires !== expires) {
-            session.expires = expires;
-            store.all = sessions;
-        }
-
-        let selectedScript = session.selectedScript || 'default';
-        let selectedScriptContent = getScript(selectedScript);
+        // SSL client-to-proxy request is forwarded by http-mitm-proxy
+        // The raw request before forwarding is stored in `ctx.connectRequest`.
+        let rawReq = ctx.isSSL ? ctx['connectRequest'] : ctx.clientToProxyRequest;
+        let address = rawReq.connection.remoteAddress.replace(/:/g, '-').replace(/^--1$/, 'localhost');
+        let builtinScriptContent = getScript('builtin');
         let globalScriptContent = getScript('global');
+        let selectedScriptContent = getScript(address);
 
         let evalContext = createSandbox(ctx);
         
+        runInAsyncContext(builtinScriptContent, evalContext);
         runInAsyncContext(globalScriptContent, evalContext);
         runInAsyncContext(selectedScriptContent, evalContext);
 

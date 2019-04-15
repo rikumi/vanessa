@@ -1,14 +1,14 @@
 import HTTPStatus = require('http-status');
 
 import { IContext } from 'http-mitm-proxy';
-import { getStreamOperations, overwriteStream } from './stream';
+import { getStreamOperations, overwriteStream, wrapStream } from './stream';
 
-interface IMockContext extends IContext {
+interface MockContext extends IContext {
     mockData?: string | Buffer;
     hasScheduledMockResponse?: boolean;
 }
 
-const scheduleMockResponse = (ctx: IMockContext) => {
+const scheduleMockResponse = (ctx: MockContext) => {
     if (ctx.hasScheduledMockResponse) {
         return;
     }
@@ -27,13 +27,13 @@ const scheduleMockResponse = (ctx: IMockContext) => {
             data = status + ' ' + HTTPStatus[status];
         }
 
+        ctx.onResponse(() => {});
         res.writeHead(status, headers);
-        res.write(data.toString());
-        res.end();
+        wrapStream(data).pipe(res);
     });
 }
 
-export default function getResponse(ctx: IMockContext) {
+export default function getResponse(ctx: MockContext) {
     let pending = !ctx.serverToProxyResponse;
 
     let res = ctx.proxyToClientResponse;

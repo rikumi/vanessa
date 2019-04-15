@@ -7,13 +7,25 @@ import toDuplex = require('duplexify');
 import PassthroughDuplex = require('minipass');
 
 import { NullWritable } from 'null-writable';
-import { Transform } from 'stream';
+import { Transform, Readable } from 'stream';
+
+export function wrapStream(data: any) {
+    if (data instanceof Readable) {
+        return data;
+    }
+    if (typeof data === 'object' && !(data instanceof Buffer)) {
+        try {
+            data = JSON.stringify(data);
+        } catch (e) {}
+    }
+    if (typeof data !== 'string') {
+        data = data.toString();
+    }
+    return toStream(data);
+}
 
 export function overwriteStream(pipeFunc: (Transform) => any, data: any) {
-    if (typeof data === 'object' && !(data instanceof Buffer)) {
-        data = JSON.stringify(data);
-    }
-    pipeFunc(toDuplex(new NullWritable(), toStream(data)));
+    pipeFunc(toDuplex(new NullWritable(), wrapStream(data)));
     return true;
 }
 

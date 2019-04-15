@@ -8,11 +8,13 @@ import { URL } from 'url';
 import vanessa from '..';
 
 export default function getRequest(ctx: IContext) {
-    let rawReq = ctx.clientToProxyRequest;
     let req = ctx.proxyToServerRequestOptions;
     return {
         get localIP() {
-            return rawReq.connection.address()['address'];
+            // SSL client-to-proxy request is forwarded by http-mitm-proxy
+            // The raw request before forwarding is stored in `ctx.connectRequest`.
+            let rawReq = ctx.isSSL ? ctx['connectRequest'] : ctx.clientToProxyRequest;
+            return rawReq.connection.remoteAddress;
         },
         get realHost() {
             return req.host;
@@ -37,10 +39,11 @@ export default function getRequest(ctx: IContext) {
             req.port = port;
         },
         get url() {
-            return (ctx.isSSL ? 'https://' : 'http://') +
-                (req.headers.host || req.host) +
-                (req.port ? ':' + req.port : '') +
-                req.path;
+            let scheme = ctx.isSSL ? 'https:' : 'http:';
+            let host = req.headers.host || req.host;
+            let defaultPort = scheme === 'https:' ? 443 : 80;
+            let port = req.port !== defaultPort && req.port && ':' + req.port || '';
+            return scheme + '//' + host + port + req.path;
         },
         set url(url: string | URL) {
             if (typeof url === 'string') {
@@ -113,8 +116,12 @@ export default function getRequest(ctx: IContext) {
             } else if (type === 'PAC') {
                 let agent: any = new PACAgent(proxy);
 
-                // 修正 PACAgent 解析到 DIRECT 时建立 tls.connect 连接无法给出正确的 SNI 而收到错误证书的问题
-                // 这里重写 PACAgent 的 connect 方法，补齐 servername 参数
+                // When a PAC file tells DIRECT, PACAgent will call `tls.connect` with customizable options,
+                // but no hostname is provided, resulting in missing SNI, in which case the remove server
+                // may not send back the proper certificate.
+
+                // We override the `connect` method of the agent to provide a proper hostname in options
+                // to be passed into `tls.connect`.
                 let connect = agent.callback.bind(agent);
                 agent.callback = (r, opts, fn) => {
                     return connect(r, Object.assign(opts || {}, {
