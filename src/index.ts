@@ -12,6 +12,8 @@ import clientSideMiddleware from './middleware/client-side/root';
 import serverSideMiddleware from './middleware/server-side/root';
 import gunzipMiddleware from './middleware/server-side/gunzip';
 import loggerMiddleware from './middleware/client-side/logger';
+import clientProxyMiddleware from './middleware/client-side/proxy';
+import serverProxyMiddleware from './middleware/server-side/proxy';
 
 export default class Vanessa extends Koa {
     sslServers: any;
@@ -32,7 +34,7 @@ export default class Vanessa extends Koa {
         this.wsServer = new WebSocket.Server({ server: this.httpServer });
         this.wsServer.on('error', (e) => this.emit('error', e));
         this.wsServer.on('connection', (ws, req) => {
-            ws.upgradeReq = req;
+            ws['upgradeReq'] = req;
             this._onWebSocketServerConnect.call(this, false, ws, req);
         });
         
@@ -183,9 +185,11 @@ export default class Vanessa extends Koa {
     _onHttpServerRequest(isSSL: boolean, req: http.IncomingMessage, res: http.ServerResponse) {
         const fn = compose([
             clientSideMiddleware,
+            clientProxyMiddleware,
             loggerMiddleware,
             ...this.middleware,
             gunzipMiddleware,
+            serverProxyMiddleware,
             serverSideMiddleware
         ]);
 

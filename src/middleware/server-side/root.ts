@@ -10,7 +10,9 @@ const serverSideMiddleware: Middleware = async (ctx) => {
         let [host, port] = hostport.split(':');
         port = port && parseInt(port) || { http: 80, https: 443 }[ctx.protocol];
 
-        let options = { host, port, method, path, headers };
+        let options = Object.assign(ctx.requestOptions, {
+            host, port, method, path, headers
+        });
         let req = proto.request(options, resolve);
 
         let clientReq = ctx.req;
