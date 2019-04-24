@@ -1,4 +1,14 @@
 {
+  "name": "vanessa",
+  "version": "1.0.0",
+  "description": "An HTTPS MITM Proxy based on Koa.js",
+  "main": "src/app.ts",
+  "repository": "https://github.com/rikumi/vanessa",
+  "author": "rikumi <riku.mi@outlook.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node src/app.ts"
+  },
   "dependencies": {
     "@types/koa": "^2.0.48",
     "@types/node": "^11.13.7",

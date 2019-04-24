@@ -7,10 +7,11 @@ import * as semaphore from 'semaphore';
 import * as compose from 'koa-compose';
 import * as Koa from 'koa';
 
-import ca from './certs/certs';
+import ca from './certs';
 import clientSideMiddleware from './middleware/client-side/root';
 import serverSideMiddleware from './middleware/server-side/root';
 import gunzipMiddleware from './middleware/server-side/gunzip';
+import loggerMiddleware from './middleware/client-side/logger';
 
 export default class Vanessa extends Koa {
     sslServers: any;
@@ -182,6 +183,7 @@ export default class Vanessa extends Koa {
     _onHttpServerRequest(isSSL: boolean, req: http.IncomingMessage, res: http.ServerResponse) {
         const fn = compose([
             clientSideMiddleware,
+            loggerMiddleware,
             ...this.middleware,
             gunzipMiddleware,
             serverSideMiddleware
