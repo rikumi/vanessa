@@ -2,7 +2,7 @@ import { Middleware } from 'koa';
 import { inspect } from 'util';
 import chalk from 'chalk';
 
-const clientSideMiddleware: Middleware = async (ctx, next) => {
+const clientEndMiddleware: Middleware = async (ctx, next) => {
     ctx.req.pause();
 
     for (let h in ctx.request.header) {
@@ -37,17 +37,12 @@ const clientSideMiddleware: Middleware = async (ctx, next) => {
         }
     });
     
-    ctx.logs = new Proxy({}, {
-        set(_, key, value) {
-            _[key] = value;
-            let message = chalk.bgCyan.black(`[${key.toString()}]`) + ` ${
-                inspect(value, false, 0, true).replace(/\s*\n\s*/g, ' ')
-            }`;
-            
-            console.log(message);
-            return true;
-        }
-    });
+    ctx.summary = {};
+    ctx.log = (key, value) => {
+        let message = chalk.bgCyan.black(`[${ key }]`) +
+            ` ${ inspect(value, false, 0, true).replace(/\s*\n\s*/g, ' ') }`;
+        console.log(message);
+    }
     ctx.requestOptions = {};
     ctx.requestFilters = [];
     ctx.responseFilters = [];
@@ -59,4 +54,4 @@ const clientSideMiddleware: Middleware = async (ctx, next) => {
     }
 }
 
-export default clientSideMiddleware;
+export default clientEndMiddleware;

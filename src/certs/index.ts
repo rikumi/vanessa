@@ -1,8 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
-
-const { pki, md } = require('node-forge');
-const { promisify } = require('util');
+import { pki, md } from 'node-forge';
+import { promisify } from 'util';
 const generateKeyPair = promisify(pki.rsa.generateKeyPair);
 
 const CAattrs = [

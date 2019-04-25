@@ -25,19 +25,18 @@ const getSystemProxy = () => {
     res = {};
 
     const { env } = process;
-    const getHostPort = (str) => /(.*)(\/([^\/]|$)|$)/.exec(str)[1];
 
     res.http = HTTPProxy ?
-        HTTPProxy + ':' + HTTPPort :
-        getHostPort(env.HTTP_PROXY || env.http_proxy);
+        'http://' + HTTPProxy + ':' + HTTPPort :
+        env.HTTP_PROXY || env.http_proxy;
 
     res.https = HTTPSProxy ?
-        HTTPSProxy + ':' + HTTPSPort :
-        getHostPort(env.HTTPS_PROXY || env.https_proxy);
+        'https://' + HTTPSProxy + ':' + HTTPSPort :
+        env.HTTPS_PROXY || env.https_proxy;
 
     res.socks = SOCKSProxy ?
-        SOCKSProxy + ':' + SOCKSPort :
-        getHostPort(env.ALL_PROXY || env.all_proxy);
+        'socks://' + SOCKSProxy + ':' + SOCKSPort :
+        env.ALL_PROXY || env.all_proxy;
 
     if (pac) res.pac = pac;
     

@@ -1,11 +1,10 @@
 import { Middleware } from 'koa';
 import * as http from 'http';
 import * as https from 'https';
-
-const PACAgent = require('pac-proxy-agent');
-const HTTPAgent = require('http-proxy-agent');
-const HTTPSAgent = require('https-proxy-agent');
-const SOCKSAgent = require('socks-proxy-agent');
+import * as PACAgent from 'pac-proxy-agent';
+import * as HTTPAgent from 'http-proxy-agent';
+import * as HTTPSAgent from 'https-proxy-agent';
+import * as SOCKSAgent from 'socks-proxy-agent';
 
 const serverProxyMiddleware: Middleware = async (ctx, next) => {
     let agent: any;
@@ -21,19 +20,19 @@ const serverProxyMiddleware: Middleware = async (ctx, next) => {
         let connect = agent.callback.bind(agent);
         agent.callback = (r, opts, fn) => {
             return connect(r, Object.assign(opts || {}, {
-                servername: ctx.request.host
+                servername: ctx.hostname
             }), fn);
         };
-        ctx.logs.proxy = { type: 'PAC', address: ctx.proxy.pac };
+        ctx.summary.proxy = { type: 'PAC', address: ctx.proxy.pac };
 
     } else if (ctx.proxy.socks) {
         agent = new SOCKSAgent(ctx.proxy.socks);
-        ctx.logs.proxy = { type: 'SOCKS', address: ctx.proxy.socks };
+        ctx.summary.proxy = { type: 'SOCKS', address: ctx.proxy.socks };
 
     } else if (ctx.protocol === 'https') {
         if (ctx.proxy.https) {
             agent = new HTTPSAgent(ctx.proxy.https);
-            ctx.logs.proxy = { type: 'HTTPS', address: ctx.proxy.https };
+            ctx.summary.proxy = { type: 'HTTPS', address: ctx.proxy.https };
         } else {
             agent = new https.Agent();
         }
@@ -41,12 +40,13 @@ const serverProxyMiddleware: Middleware = async (ctx, next) => {
     } else if (ctx.protocol === 'http') {
         if (ctx.proxy.http) {
             agent = new HTTPAgent(ctx.proxy.http);
-            ctx.logs.proxy = { type: 'HTTP', address: ctx.proxy.http };
+            ctx.summary.proxy = { type: 'HTTP', address: ctx.proxy.http };
         } else {
             agent = new http.Agent();
         }
     }
     ctx.requestOptions.agent = agent;
+    
     await next();
 };
 

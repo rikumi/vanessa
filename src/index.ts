@@ -8,12 +8,51 @@ import * as compose from 'koa-compose';
 import * as Koa from 'koa';
 
 import ca from './certs';
-import clientSideMiddleware from './middleware/client-side/root';
-import serverSideMiddleware from './middleware/server-side/root';
+import clientEndMiddleware from './middleware/client-side/client-end';
+import serverEndMiddleware from './middleware/server-side/server-end';
 import gunzipMiddleware from './middleware/server-side/gunzip';
-import loggerMiddleware from './middleware/client-side/logger';
+import summaryMiddleware from './middleware/client-side/summary';
 import clientProxyMiddleware from './middleware/client-side/proxy';
 import serverProxyMiddleware from './middleware/server-side/proxy';
+
+/**
+ * *Vanessa Core*
+ * 
+ * Vanessa Core contains a customized class derived from Koa, and
+ * part of the builtin middleware that is required for a practical
+ * man-in-the-middle proxy.
+ * 
+ * This part of middleware is divided into client-side and server-
+ * side.
+ * 
+ * The whole middleware stack is composed by client-side middleware
+ * at bottom, middleware provided with Vanessa#use() in the middle,
+ * and server-side middleware at the top.
+ */
+const composeMiddleware = (middleware) => [
+
+    // Initialize the context and request options
+    clientEndMiddleware,
+
+    // Initialize the proxy-chaining options
+    // and detect system proxy settings as default
+    clientProxyMiddleware,
+
+    // Print logs for requests and responses
+    summaryMiddleware,
+
+    // Middleware provided by user
+    ...middleware,
+
+    // Accept responses in gzip encoding and decode them in advance
+    gunzipMiddleware,
+
+    // Use proxy-chaining options to prepare requests through a remote proxy
+    serverProxyMiddleware,
+
+    // Make requests and awaiting for responses
+    serverEndMiddleware
+];
 
 export default class Vanessa extends Koa {
     sslServers: any;
@@ -96,12 +135,12 @@ export default class Vanessa extends Koa {
                 }
             );
             conn.on('error', (err) => {
-                if (err['errno'] !== 'ECONNRESET') {
+                if (err['errno'] !== 'ECONNRESET' && err['code'] !== 'ECONNRESET') {
                     this.emit('error', err);
                 }
             });
             socket.on('error', (err) => {
-                if (err.errno !== 'ECONNRESET') {
+                if (err.errno !== 'ECONNRESET' && err['code'] !== 'ECONNRESET') {
                     this.emit('error', err);
                 }
             });
@@ -183,28 +222,26 @@ export default class Vanessa extends Koa {
     }
 
     _onHttpServerRequest(isSSL: boolean, req: http.IncomingMessage, res: http.ServerResponse) {
-        const fn = compose([
-            clientSideMiddleware,
-            clientProxyMiddleware,
-            loggerMiddleware,
-            ...this.middleware,
-            gunzipMiddleware,
-            serverProxyMiddleware,
-            serverSideMiddleware
-        ]);
-
+        const fn = compose(composeMiddleware(this.middleware));
         if (!this.listenerCount('error')) this.on('error', this.onerror);
 
         const ctx = this.createContext(req, res);
         const protocol = isSSL ? 'https' : 'http';
 
-        Object.defineProperty(ctx.request, 'protocol', {
-            get() {
-                return protocol;
-            }
-        })
-
         ctx.rawRequest = this.connectRequests[req.socket.remotePort + ':' + req.socket.localPort] || req;
+
+        Object.defineProperties(ctx.request, {
+            protocol: {
+                get() {
+                    return protocol;
+                }
+            },
+            ip: {
+                get() {
+                    return ctx.rawRequest.connection.remoteAddress;
+                }
+            }
+        });
 
         return this['handleRequest'](ctx, fn);
     }

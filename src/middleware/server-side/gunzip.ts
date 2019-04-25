@@ -6,7 +6,7 @@ const gunzipMiddleware: Middleware = async (ctx, next) => {
     await next();
     let encoding = ctx.response.get('content-encoding');
     if (encoding && encoding.toLowerCase() == 'gzip') {
-        ctx.logs.gzip = { enabled: true };
+        ctx.summary.gzip = { enabled: true };
         ctx.response.set('content-encoding', null);
         ctx.responseFilters.push(createGunzip());
     }
