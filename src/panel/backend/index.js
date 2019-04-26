@@ -1,4 +1,5 @@
 const Router = require('koa-router');
+const compose = require('koa-compose');
 const adminRouter = require('./admin');
 const downloadCert = require('./cert');
 
@@ -18,20 +19,20 @@ const {
     getResponseBody
 } = require('./history');
 
-const backendRouter = new Router();
+const router = new Router();
 
-backendRouter.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
-backendRouter.get('/cert', downloadCert);
-backendRouter.get('/rules', getRules);
-backendRouter.get('/rules/:name', getRuleByName);
-backendRouter.get('/rule', getSelectedRules);
-backendRouter.get('/rule/+:name', selectRule);
-backendRouter.get('/rule/-all', deselectAllRules);
-backendRouter.get('/rule/-:name', deselectRule);
-backendRouter.get('/history', getHistory);
-backendRouter.get('/history/~:from', getHistory);
-backendRouter.get('/history/:id', getHistoryDetail);
-backendRouter.get('/history/:id/req', getRequestBody);
-backendRouter.get('/history/:id/res', getResponseBody);
+router.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
+router.get('/cert', downloadCert);
+router.get('/rules', getRules);
+router.get('/rules/:name', getRuleByName);
+router.get('/rule', getSelectedRules);
+router.get('/rule/+:name', selectRule);
+router.get('/rule/-all', deselectAllRules);
+router.get('/rule/-:name', deselectRule);
+router.get('/history', getHistory);
+router.get('/history/~:from', getHistory);
+router.get('/history/:id', getHistoryDetail);
+router.get('/history/:id/req', getRequestBody);
+router.get('/history/:id/res', getResponseBody);
 
-module.exports = backendRouter;
+module.exports = compose([router.routes(), router.allowedMethods()]);

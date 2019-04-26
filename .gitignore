@@ -53,3 +53,6 @@ node_modules
 *.gz
 
 *.code-workspace
+
+.cache
+dist
