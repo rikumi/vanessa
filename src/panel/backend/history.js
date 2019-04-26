@@ -8,6 +8,10 @@ const summarize = (ctx) => {
         status = 0;
         type = '';
     }
+    
+    if (isLocalhost(ip)) {
+        ip = 'localhost';
+    }
 
     return { id, method, url, ip, status, type };
 };
@@ -31,8 +35,7 @@ const getHistoryDetail = (ctx) => {
     } else if (!shouldShow(ctx, detail)) {
         ctx.throw(403);
     } else {
-        let { summary } = detail;
-        let { request, response } = summary;
+        let { summary, request, response } = detail;
         ctx.body = {
             id,
             request: {
@@ -60,6 +63,7 @@ const getRequestBody = (ctx) => {
         if (body == null) {
             ctx.throw(404);
         } else {
+            ctx.set('content-type', detail.get('content-type'));
             ctx.body = body;
         }
     }
@@ -77,6 +81,9 @@ const getResponseBody = (ctx) => {
         if (body == null) {
             ctx.throw(404);
         } else {
+            ctx.set('content-type', detail.response.headers['content-type']);
+            ctx.set('content-disposion', detail.response.headers['content-disposion']);
+            ctx.set('content-encoding', detail.response.headers['content-encoding']);
             ctx.body = body;
         }
     }

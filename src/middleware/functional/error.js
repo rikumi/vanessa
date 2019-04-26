@@ -5,7 +5,8 @@ const errorMiddleware = async (ctx, next) => {
         await next();
     } catch (e) {
         ctx.summary.error = e;
-        ctx.body = e.stack;
+        // ctx.body = e.stack;
+        // ctx.status = e.code;
         // ctx.redirect('https://vanes.sa/show-error/' + ctx.id);
     }
 };

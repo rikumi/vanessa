@@ -7,14 +7,14 @@ const static = require('koa2-static-middleware');
 
 const router = new Router();
 
-const backendMiddleware = require('../../panel/backend');
-router.use('/api', backendMiddleware);
+const backendRouter = require('../../panel/backend');
+router.use('/api', backendRouter.routes(), backendRouter.allowedMethods());
 
 const frontendDir = path.join(__dirname, '..', '..', 'panel', 'frontend');
 const outDir = path.join(frontendDir, 'dist');
 const cacheDir = path.join(frontendDir, '.cache');
 const entryFile = path.join(frontendDir, 'index.html');
-const bundler = new Parcel(entryFile, { outDir, cacheDir });
+const bundler = new Parcel(entryFile, { outDir, cacheDir, hmrHostname: 'localhost' });
 const bundled = bundler.bundle();
 
 const frontendMiddleware = static(outDir);

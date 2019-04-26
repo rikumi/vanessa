@@ -28,9 +28,13 @@ const sessionMiddleware = async (ctx, next) => {
 
     if (await exists(filePath)) {
         try {
-            let content = await readFile(filePath).toString();
+            let content = (await readFile(filePath)).toString();
             ctx.session = yaml.parse(content);
         } catch (e) {}
+    }
+
+    if (!ctx.session || typeof ctx.session !== 'object' || Array.isArray(ctx.session)) {
+        ctx.session = {};
     }
 
     if (!isLocal && ctx.session.expires && ctx.session.expires < Date.now()) {

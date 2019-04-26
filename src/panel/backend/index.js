@@ -8,7 +8,6 @@ const {
     getRuleByName,
     selectRule,
     deselectRule,
-    getSelectedRules,
     deselectAllRules
 } = require('./rule');
 
@@ -23,16 +22,15 @@ const router = new Router();
 
 router.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
 router.get('/cert', downloadCert);
-router.get('/rules', getRules);
-router.get('/rules/:name', getRuleByName);
-router.get('/rule', getSelectedRules);
-router.get('/rule/+:name', selectRule);
-router.get('/rule/-all', deselectAllRules);
-router.get('/rule/-:name', deselectRule);
+router.get('/rule', getRules);
+router.get('/rule/:name', getRuleByName);
+router.post('/rule/:name', selectRule);
+router.delete('/rule', deselectAllRules);
+router.delete('/rule/:name', deselectRule);
 router.get('/history', getHistory);
 router.get('/history/~:from', getHistory);
 router.get('/history/:id', getHistoryDetail);
 router.get('/history/:id/req', getRequestBody);
 router.get('/history/:id/res', getResponseBody);
 
-module.exports = compose([router.routes(), router.allowedMethods()]);
+module.exports = router;

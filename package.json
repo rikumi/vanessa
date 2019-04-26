@@ -10,6 +10,7 @@
     "start": "nodemon src/app.js"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "chalk": "^2.4.2",
     "collect-all": "^1.0.3",
     "glob": "^7.1.3",
@@ -22,6 +23,7 @@
     "koa2-static-middleware": "^1.0.3",
     "listen-random-port": "^1.0.0",
     "mkdirp": "^0.5.1",
+    "monaco-editor": "^0.16.2",
     "multiplex-server": "^0.0.2",
     "node-forge": "^0.8.2",
     "nodemon": "^1.18.11",
@@ -29,10 +31,15 @@
     "parcel": "^1.12.3",
     "semaphore": "^1.1.0",
     "socks-proxy-agent": "^4.0.2",
+    "vue": "^2.6.10",
+    "vue-hot-reload-api": "^2.3.3",
     "ws": "^6.2.1",
     "yaml": "^1.5.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/plugin-transform-runtime": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
     "@types/glob": "^7.1.1",
     "@types/koa": "^2.0.48",
     "@types/koa-router": "^7.0.40",
@@ -40,6 +47,45 @@
     "@types/node": "^11.13.7",
     "@types/semaphore": "^1.1.0",
     "@types/ws": "^6.0.1",
-    "@types/yaml": "^1.0.2"
+    "@types/yaml": "^1.0.2",
+    "@vue/component-compiler-utils": "^3.0.0",
+    "autoprefixer": "^9.5.1",
+    "babel-plugin-module-resolver": "^3.2.0",
+    "less": "^3.9.0",
+    "pug": "^2.0.3",
+    "vue-template-compiler": "^2.6.10"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ],
+    "plugins": [
+      "@babel/plugin-transform-runtime",
+      [
+        "module-resolver",
+        {
+          "alias": {
+            "vue": "vue/dist/vue.min"
+          }
+        }
+      ]
+    ]
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": true
+    }
+  },
+  "browserslist": [
+    "ios >= 8",
+    "android >= 4.1",
+    "ie >= 10",
+    "defaults"
+  ],
+  "nodemonConfig": {
+    "restartable": false,
+    "ignore": [
+      "frontend/*"
+    ]
   }
 }

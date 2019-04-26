@@ -306,6 +306,8 @@ module.exports = class Vanessa extends Koa {
             ctx.closedByServer = closedByServer;
             ctx.closedByClient = !closedByServer;
 
+            if (code >= 1004 && code <= 1006) code = 1001;
+            
             if (ctx.clientToProxyWebSocket.readyState !== ctx.proxyToServerWebSocket.readyState) {
                 if (ctx.clientToProxyWebSocket.readyState === WebSocket.CLOSED && ctx.proxyToServerWebSocket.readyState === WebSocket.OPEN) {
                     ctx.proxyToServerWebSocket.close(code, message);

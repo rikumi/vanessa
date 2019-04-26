@@ -1,11 +1,13 @@
 const { getAllRuleNames, getRule } = require('../../util/rule');
 
 const getRules = async (ctx) => {
-    ctx.body = getAllRuleNames();
-};
-
-const getSelectedRules = async (ctx) => {
-    ctx.body = ctx.session.selectedRules || [];
+    let selected = ctx.session.selectedRules || [];
+    ctx.body = getAllRuleNames().map(k => {
+        return {
+            name: k,
+            isSelected: selected.includes(k)
+        }
+    });
 };
 
 const getRuleByName = async (ctx) => {
@@ -28,6 +30,7 @@ const selectRule = async (ctx) => {
     if (!selectedRules.includes(name)) {
         if (await getRule(name)) {
             selectedRules.push(name);
+            ctx.session.selectedRules = selectedRules;
         } else {
             ctx.throw(404);
         }
@@ -58,7 +61,6 @@ const deselectAllRules = async (ctx) => {
 module.exports = {
     getRules,
     getRuleByName,
-    getSelectedRules,
     selectRule,
     deselectRule,
     deselectAllRules

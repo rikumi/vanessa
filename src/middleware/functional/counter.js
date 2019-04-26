@@ -5,7 +5,9 @@ const recentContexts = new AgingQueue(1024);
 
 const counterMiddleware = async (ctx, next) => {
     recentContexts.push(ctx);
+    ctx.log('request', ctx.request);
     await next();
+    ctx.log('response', ctx.response);
 };
 
 module.exports = counterMiddleware;
