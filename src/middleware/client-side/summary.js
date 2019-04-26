@@ -1,6 +1,6 @@
-import { Middleware } from 'koa';
+const { Middleware } = require('koa');
 
-const summaryMiddleware: Middleware = async (ctx, next) => {
+const summaryMiddleware = async (ctx, next) => {
     let { method, url, header: reqHeaders } = ctx.request;
     ctx.summary.request = { method, url, headers: reqHeaders };
     ctx.log('request', ctx.summary.request);
@@ -12,4 +12,4 @@ const summaryMiddleware: Middleware = async (ctx, next) => {
     ctx.log('response', ctx.summary.response);
 };
 
-export default summaryMiddleware;
+module.exports = summaryMiddleware;

@@ -1,8 +1,8 @@
-import { Middleware } from 'koa';
-import * as cp from 'child_process';
+const { Middleware } = require('koa');
+const cp = require('child_process');
 
 const getSystemProxy = () => {
-    let res: any = {};
+    let res = {};
 
     try {
         cp.execSync('scutil --proxy')
@@ -43,9 +43,9 @@ const getSystemProxy = () => {
     return res;
 }
 
-const clientProxyMiddleware: Middleware = async (ctx, next) => {
+const clientProxyMiddleware = async (ctx, next) => {
     ctx.proxy = getSystemProxy();
     await next();
 };
 
-export default clientProxyMiddleware;
+module.exports = clientProxyMiddleware;

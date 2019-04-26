@@ -1,7 +1,7 @@
-import { Middleware } from 'koa';
-import { createGunzip } from 'zlib';
+const { Middleware } = require('koa');
+const { createGunzip } = require('zlib');
 
-const gunzipMiddleware: Middleware = async (ctx, next) => {
+const gunzipMiddleware = async (ctx, next) => {
     ctx.request.header['accept-encoding'] = 'gzip';
     await next();
     let encoding = ctx.response.get('content-encoding');
@@ -12,4 +12,4 @@ const gunzipMiddleware: Middleware = async (ctx, next) => {
     }
 };
 
-export default gunzipMiddleware;
+module.exports = gunzipMiddleware;

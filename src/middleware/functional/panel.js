@@ -1,7 +1,7 @@
-import * as compose from 'koa-compose';
-import * as Router from 'koa-router';
-import backendRouter from '../../panel/backend';
-import { Middleware } from 'koa';
+const compose = require('koa-compose');
+const Router = require('koa-router');
+const backendRouter = require('../../panel/backend');
+const { Middleware } = require('koa');
 
 const router = new Router();
 
@@ -13,12 +13,12 @@ const routerMiddleware = compose([
     router.allowedMethods()
 ]);
 
-const panelMiddleware: Middleware = async (ctx, next) => {
+const panelMiddleware = async (ctx, next) => {
     if (ctx.host === 'vanes.sa') {
-        await routerMiddleware(<any>ctx, async () => {});
+        await routerMiddleware(ctx, async () => {});
     } else {
         await next();
     }
 };
 
-export default panelMiddleware;
+module.exports = panelMiddleware;

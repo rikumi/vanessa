@@ -1,8 +1,8 @@
-import { Middleware, Context } from 'koa';
-import * as isLocalhost from 'is-localhost';
-import { recentContexts } from '../../middleware/functional/counter';
+const { Middleware, Context } = require('koa');
+const isLocalhost = require('is-localhost');
+const { recentContexts } = require('../../middleware/functional/counter');
 
-const summarize = (ctx: Context): any => {
+const summarize = (ctx) => {
     let { id, method, url, ip, status, res, response: { type }} = ctx;
     if (!res.finished) {
         status = 0;
@@ -12,18 +12,18 @@ const summarize = (ctx: Context): any => {
     return { id, method, url, ip, status, type };
 };
 
-const shouldShow = (currentContext: Context, otherContext: Context) => {
+const shouldShow = (currentContext, otherContext) => {
     return isLocalhost(currentContext.ip) || currentContext.ip === otherContext.ip;
 }
 
-const getHistory: Middleware = (ctx) => {
+const getHistory = (ctx) => {
     let from = Number(ctx.params.from || -50);
     ctx.body = recentContexts.slice(from)
         .filter(k => shouldShow(ctx, k))
         .map(k => summarize(k));
 };
 
-const getHistoryDetail: Middleware = (ctx) => {
+const getHistoryDetail = (ctx) => {
     let id = Number(ctx.params.id);
     let detail = recentContexts.get(id);
     if (detail == null) {
@@ -48,7 +48,7 @@ const getHistoryDetail: Middleware = (ctx) => {
     }
 };
 
-const getRequestBody: Middleware = (ctx) => {
+const getRequestBody = (ctx) => {
     let id = Number(ctx.params.id);
     let detail = recentContexts.get(id);
     if (detail == null) {
@@ -56,7 +56,7 @@ const getRequestBody: Middleware = (ctx) => {
     } else if (!shouldShow(ctx, detail)) {
         ctx.throw(403);
     } else {
-        let body = detail.request['body'];
+        let body = detail.request.body;
         if (body == null) {
             ctx.throw(404);
         } else {
@@ -65,7 +65,7 @@ const getRequestBody: Middleware = (ctx) => {
     }
 };
 
-const getResponseBody: Middleware = (ctx) => {
+const getResponseBody = (ctx) => {
     let id = Number(ctx.params.id);
     let detail = recentContexts.get(id);
     if (detail == null) {
@@ -82,7 +82,7 @@ const getResponseBody: Middleware = (ctx) => {
     }
 };
 
-export {
+module.exports = {
     getHistory,
     getHistoryDetail,
     getRequestBody,

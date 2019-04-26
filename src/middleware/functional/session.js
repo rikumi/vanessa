@@ -1,11 +1,11 @@
-import { Middleware } from 'koa';
-import * as os from 'os';
-import * as fs from 'fs';
-import * as util from 'util';
-import * as path from 'path';
-import * as yaml from 'yaml';
-import * as mkdirp from 'mkdirp';
-import * as isLocalhost from 'is-localhost';
+const { Middleware } = require('koa');
+const os = require('os');
+const fs = require('fs');
+const util = require('util');
+const path = require('path');
+const yaml = require('yaml');
+const mkdirp = require('mkdirp');
+const isLocalhost = require('is-localhost');
 
 let exists = util.promisify(fs.exists);
 let readFile = util.promisify(fs.readFile);
@@ -14,7 +14,7 @@ let writeFile = util.promisify(fs.writeFile);
 const sessionDir = path.join(os.homedir(), '.vanessa', 'sessions');
 mkdirp.sync(sessionDir);
 
-const sessionMiddleware: Middleware = async (ctx, next) => {
+const sessionMiddleware = async (ctx, next) => {
     let address = ctx.ip;
     let isLocal = isLocalhost(address);
     if (isLocal) {
@@ -46,4 +46,4 @@ const sessionMiddleware: Middleware = async (ctx, next) => {
     writeFile(filePath, yaml.stringify(ctx.session));
 };
 
-export default sessionMiddleware;
+module.exports = sessionMiddleware;

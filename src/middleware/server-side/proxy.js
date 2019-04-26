@@ -1,13 +1,13 @@
-import { Middleware } from 'koa';
-import * as http from 'http';
-import * as https from 'https';
-import * as PACAgent from 'pac-proxy-agent';
-import * as HTTPAgent from 'http-proxy-agent';
-import * as HTTPSAgent from 'https-proxy-agent';
-import * as SOCKSAgent from 'socks-proxy-agent';
+const { Middleware } = require('koa');
+const http = require('http');
+const https = require('https');
+const PACAgent = require('pac-proxy-agent');
+const HTTPAgent = require('http-proxy-agent');
+const HTTPSAgent = require('https-proxy-agent');
+const SOCKSAgent = require('socks-proxy-agent');
 
-const serverProxyMiddleware: Middleware = async (ctx, next) => {
-    let agent: any;
+const serverProxyMiddleware = async (ctx, next) => {
+    let agent;
     if (ctx.proxy.pac) {
         agent = new PACAgent(ctx.proxy.pac);
         
@@ -50,4 +50,4 @@ const serverProxyMiddleware: Middleware = async (ctx, next) => {
     await next();
 };
 
-export default serverProxyMiddleware;
+module.exports = serverProxyMiddleware;

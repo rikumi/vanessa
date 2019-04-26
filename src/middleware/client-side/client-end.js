@@ -1,8 +1,8 @@
-import { Middleware } from 'koa';
-import { inspect } from 'util';
-import chalk from 'chalk';
+const { Middleware } = require('koa');
+const { inspect } = require('util');
+const chalk = require('chalk');
 
-const clientEndMiddleware: Middleware = async (ctx, next) => {
+const clientEndMiddleware = async (ctx, next) => {
     ctx.req.pause();
 
     for (let h in ctx.request.header) {
@@ -54,4 +54,4 @@ const clientEndMiddleware: Middleware = async (ctx, next) => {
     }
 }
 
-export default clientEndMiddleware;
+module.exports = clientEndMiddleware;

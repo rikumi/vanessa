@@ -1,12 +1,12 @@
-type Extended<T> = T & { id?: number };
+module.exports = class AgingQueue {
 
-export default class AgingQueue<T> {
-    offsetNumber = 0;
-    queue: Extended<T>[] = [];
+    constructor(maxCapacity) {
+        this.maxCapacity = maxCapacity;
+        this.offsetNumber = 0;
+        this.queue = [];
+    }
 
-    constructor(private maxCapacity: number) {}
-
-    push(obj: Extended<T>) {
+    push(obj) {
         this.queue.push(obj);
         while (this.queue.length > this.maxCapacity) {
             this.queue.shift();
@@ -15,12 +15,12 @@ export default class AgingQueue<T> {
         obj.id = this.offsetNumber + this.queue.length - 1;
     }
 
-    get(id: number): Extended<T> {
+    get(id) {
         let obj = this.queue[id - this.offsetNumber];
         return obj;
     }
 
-    slice(id: number): Extended<T>[] {
+    slice(id) {
         if (id >= 0) {
             return this.queue.slice(Math.max(0, id - this.offsetNumber));
         } else {
@@ -28,7 +28,7 @@ export default class AgingQueue<T> {
         }
     }
 
-    all(): Extended<T>[] {
+    all() {
         return this.slice(0);
     }
 }

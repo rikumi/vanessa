@@ -1,11 +1,11 @@
-import * as vm from 'vm';
-import { Middleware } from 'koa';
-import * as compose from 'koa-compose';
+const vm = require('vm');
+const { Middleware } = require('koa');
+const compose = require('koa-compose');
 
-import { getRule } from '../../util/rule';
+const { getRule } = require('../../util/rule');
 
-const ruleMiddleware: Middleware = async (ctx, next) => {
-    let selectedRules: string[] = ctx.session.selectedRules || [];
+const ruleMiddleware = async (ctx, next) => {
+    let selectedRules = ctx.session.selectedRules || [];
     
     let scripts = (await Promise.all(selectedRules.map(getRule))).filter(k => k);
     
@@ -24,4 +24,4 @@ const ruleMiddleware: Middleware = async (ctx, next) => {
     await composed(ctx, next);
 };
 
-export default ruleMiddleware;
+module.exports = ruleMiddleware;

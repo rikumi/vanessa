@@ -1,7 +1,7 @@
-import * as path from 'path';
-import * as fs from 'fs';
-import { pki, md } from 'node-forge';
-import { promisify } from 'util';
+const path = require('path');
+const fs = require('fs');
+const { pki, md } = require('node-forge');
+const { promisify } = require('util');
 const generateKeyPair = promisify(pki.rsa.generateKeyPair);
 
 const CAattrs = [
@@ -90,7 +90,7 @@ const ServerAttrs = [
     }
 ];
 
-const ServerExtensions: any = [
+const ServerExtensions = [
     {
         name: 'basicConstraints',
         cA: false
@@ -138,7 +138,7 @@ const certFile = path.join(__dirname, 'ca.pem');
 const privateKeyFile = path.join(__dirname, 'ca.key');
 const publicKeyFile = path.join(__dirname, 'ca.pub');
 
-const certs: any = {};
+const certs = {};
 
 (async () => {
     if (!fs.existsSync(certFile)) {
@@ -172,8 +172,8 @@ const certs: any = {};
     }
 })();
 
-export default new Proxy(certs, {
-    get(_, host: string) {
+module.exports = new Proxy(certs, {
+    get(_, host) {
         if (certs[host]) {
             return certs[host];
         }

@@ -1,15 +1,14 @@
-import { Middleware } from 'koa';
-import { getAllRuleNames, getRule } from '../../util/rule';
+const { getAllRuleNames, getRule } = require('../../util/rule');
 
-const getRules: Middleware = async (ctx) => {
+const getRules = async (ctx) => {
     ctx.body = getAllRuleNames();
 };
 
-const getSelectedRules: Middleware = async (ctx) => {
+const getSelectedRules = async (ctx) => {
     ctx.body = ctx.session.selectedRules || [];
 };
 
-const getRuleByName: Middleware = async (ctx) => {
+const getRuleByName = async (ctx) => {
     let rule = await getRule(ctx.params.name);
     if (!rule) {
         ctx.throw(404);
@@ -17,7 +16,7 @@ const getRuleByName: Middleware = async (ctx) => {
     ctx.body = rule;
 };
 
-const selectRule: Middleware = async (ctx) => {
+const selectRule = async (ctx) => {
     let { selectedRules = [] } = ctx.session;
     let { name = '' } = ctx.params;
 
@@ -36,7 +35,7 @@ const selectRule: Middleware = async (ctx) => {
     ctx.body = 'OK';
 };
 
-const deselectRule: Middleware = async (ctx) => {
+const deselectRule = async (ctx) => {
     let { selectedRules = [] } = ctx.session;
     let { name = '' } = ctx.params;
 
@@ -51,12 +50,12 @@ const deselectRule: Middleware = async (ctx) => {
     ctx.body = 'OK';
 };
 
-const deselectAllRules: Middleware = async (ctx) => {
+const deselectAllRules = async (ctx) => {
     ctx.session.selectedRules = [];
     ctx.body = 'OK';
 };
 
-export {
+module.exports = {
     getRules,
     getRuleByName,
     getSelectedRules,

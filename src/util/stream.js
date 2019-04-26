@@ -1,12 +1,12 @@
-import { Readable } from 'stream';
+const { Readable, Writable } = require('stream');
 
-const fromString = (str: string) => {
+const fromString = (str) => {
     let readable = new Readable();
     readable.push(str);
     return readable;
 }
 
-const toString = async (stream: Readable) => {
+const toString = async (stream) => {
     return new Promise<string>((resolve, reject) => {
         let buffer = new Buffer('');
         stream.on('data', (chunk) => buffer.write(chunk));
@@ -15,7 +15,7 @@ const toString = async (stream: Readable) => {
     });
 };
 
-const steal = async (stream: any) => {
+const steal = async (stream) => {
     if (stream.readable) {
         return new Promise((resolve, reject) => {
             let pipe = stream.pipe;
@@ -44,8 +44,8 @@ const steal = async (stream: any) => {
     }
 }
 
-export {
+module.exports = {
     fromString,
     toString,
     steal
-}
+};

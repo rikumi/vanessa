@@ -1,9 +1,9 @@
-import { Middleware } from 'koa';
-import { setRule, removeRule, getRule } from '../../../util/rule';
-import { toString } from '../../../util/stream';
+const { Middleware } = require('koa');
+const { setRule, removeRule, getRule } = require('../../../util/rule');
+const { toString } = require('../../../util/stream');
 
-const addOrModifyRule: Middleware = async (ctx) => {
-    let name: string = ctx.params.name || '';
+const addOrModifyRule = async (ctx) => {
+    let name = ctx.params.name || '';
     name = name.trim();
     if (!name) {
         ctx.throw(400);
@@ -18,8 +18,8 @@ const addOrModifyRule: Middleware = async (ctx) => {
     ctx.body = 'OK';
 };
 
-const addOrModifyRuleOptions: Middleware = async (ctx) => {
-    let name: string = ctx.params.name || '';
+const addOrModifyRuleOptions = async (ctx) => {
+    let name = ctx.params.name || '';
     name = name.trim();
     if (!name) {
         ctx.throw(400);
@@ -34,7 +34,7 @@ const addOrModifyRuleOptions: Middleware = async (ctx) => {
     ctx.body = 'OK';
 };
 
-const deleteRule: Middleware = async (ctx) => {
+const deleteRule = async (ctx) => {
     let { name = '' } = ctx.params;
     name = name.trim();
     if (!name) {
@@ -45,7 +45,7 @@ const deleteRule: Middleware = async (ctx) => {
     ctx.body = 'OK';
 };
 
-export {
+module.exports = {
     addOrModifyRule,
     addOrModifyRuleOptions,
     deleteRule

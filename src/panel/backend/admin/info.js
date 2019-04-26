@@ -1,11 +1,11 @@
-import * as os from 'os';
-import { Middleware } from 'koa';
-import { version } from '../../../../package.json';
+const os = require('os');
+const { Middleware } = require('koa');
+const { version } = require('../../../../package.json');
 
 const startTime = Date.now();
 const upTime = Date.now() - os.uptime() * 1000;
 
-const getInfo: Middleware = (ctx) => {
+const getInfo = (ctx) => {
     ctx.body = {
         client: {
             ip: ctx.ip,
@@ -35,4 +35,4 @@ const getInfo: Middleware = (ctx) => {
     };
 }
 
-export default getInfo;
+module.exports = getInfo;

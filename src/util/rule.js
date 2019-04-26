@@ -1,21 +1,15 @@
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import * as glob from 'glob';
-import * as util from 'util';
-import * as yaml from 'yaml';
-import * as mkdirp from 'mkdirp';
-
-interface Rule {
-    name: string;
-    content: string;
-    options: any
-}
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const glob = require('glob');
+const util = require('util');
+const yaml = require('yaml');
+const mkdirp = require('mkdirp');
 
 const ruleDir = path.join(os.homedir(), '.vanessa', 'rules');
 mkdirp.sync(ruleDir);
 
-const loaders: { [ext: string]: (content: string) => string } = {
+const loaders = {
     js: (content) => content
 };
 
@@ -28,7 +22,7 @@ const getAllRuleNames = () => {
     return glob.sync(path.join(ruleDir, fileGlob)).map((p) => path.basename(p));
 };
 
-const getRule = async (name: string): Promise<Rule | null> => {
+const getRule = async (name) => {
     let filePath = path.join(ruleDir, name);
     if (!fs.existsSync(filePath)) {
         return null;
@@ -52,19 +46,19 @@ const getAllRules = async () => {
     return (await Promise.all(getAllRuleNames().map(getRule))).filter((r) => r);
 };
 
-const setRule = async ({ name, content, options = {}}: Rule) => {
+const setRule = async ({ name, content, options = {}}) => {
     let filePath = path.join(ruleDir, name);
     await writeFile(filePath, content);
     await writeFile(filePath + '.yaml', yaml.stringify(options));
 }
 
-const removeRule = async (name: string) => {
+const removeRule = async (name) => {
     let filePath = path.join(ruleDir, name);
     await unlink(filePath);
     await unlink(filePath + '.yaml');
 }
 
-export {
+module.exports = {
     ruleDir,
     loaders,
     getAllRuleNames,

@@ -1,6 +1,6 @@
-import { Middleware } from 'koa';
+const { Middleware } = require('koa');
 
-const errorMiddleware: Middleware = async (ctx, next) => {
+const errorMiddleware = async (ctx, next) => {
     try {
         await next();
     } catch (e) {
@@ -10,4 +10,4 @@ const errorMiddleware: Middleware = async (ctx, next) => {
     }
 };
 
-export default errorMiddleware;
+module.exports = errorMiddleware;

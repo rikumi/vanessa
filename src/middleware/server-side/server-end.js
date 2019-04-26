@@ -1,11 +1,11 @@
-import { Middleware } from 'koa';
-import * as http from 'http';
-import * as https from 'https';
+const { Middleware } = require('koa');
+const http = require('http');
+const https = require('https');
 
-const serverEndMiddleware: Middleware = async (ctx) => {
+const serverEndMiddleware = async (ctx) => {
     let res;
     try {
-        res = await new Promise<http.IncomingMessage>((resolve, reject) => {
+        res = await new Promise((resolve, reject) => {
             let proto = ctx.protocol === 'https' ? https : http;
             let { method, host: hostport, url: path, headers } = ctx.request;
             
@@ -44,8 +44,8 @@ const serverEndMiddleware: Middleware = async (ctx) => {
     res.headers['transfer-encoding'] = 'chunked';
     res.headers['connection'] = 'close';
     delete res.headers['content-length'];
-    ctx.response.set(res.headers as any);
+    ctx.response.set(res.headers);
     ctx.response['_body'] = res;
 };
 
-export default serverEndMiddleware;
+module.exports = serverEndMiddleware;

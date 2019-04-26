@@ -1,22 +1,22 @@
-import * as Router from 'koa-router';
-import adminRouter from './admin';
-import downloadCert from './cert';
+const Router = require('koa-router');
+const adminRouter = require('./admin');
+const downloadCert = require('./cert');
 
-import {
+const {
     getRules,
     getRuleByName,
     selectRule,
     deselectRule,
     getSelectedRules,
     deselectAllRules
-} from './rule';
+} = require('./rule');
 
-import {
+const {
     getHistory,
     getHistoryDetail,
     getRequestBody,
     getResponseBody
-} from './history';
+} = require('./history');
 
 const backendRouter = new Router();
 
@@ -34,4 +34,4 @@ backendRouter.get('/history/:id', getHistoryDetail);
 backendRouter.get('/history/:id/req', getRequestBody);
 backendRouter.get('/history/:id/res', getResponseBody);
 
-export default backendRouter;
+module.exports = backendRouter;

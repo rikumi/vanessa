@@ -1,7 +1,7 @@
-import * as Router from 'koa-router';
-import * as isLocalhost from 'is-localhost';
-import getInfo from './info';
-import { addOrModifyRule, addOrModifyRuleOptions, deleteRule } from './rule';
+const Router = require('koa-router');
+const isLocalhost = require('is-localhost');
+const getInfo = require('./info');
+const { addOrModifyRule, addOrModifyRuleOptions, deleteRule } = require('./rule');
 
 const adminRouter = new Router();
 
@@ -17,4 +17,4 @@ adminRouter.post('/rule/:name', addOrModifyRule);
 adminRouter.put('/rule/:name', addOrModifyRuleOptions);
 adminRouter.delete('/rule/:name', deleteRule);
 
-export default adminRouter;
+module.exports = adminRouter;

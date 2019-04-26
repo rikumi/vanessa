@@ -1,19 +1,19 @@
-import * as net from 'net';
-import * as http from 'http';
-import * as https from 'https';
-import * as WebSocket from 'ws';
-import * as url from 'url';
-import * as semaphore from 'semaphore';
-import * as compose from 'koa-compose';
-import * as Koa from 'koa';
+const net = require('net');
+const http = require('http');
+const https = require('https');
+const WebSocket = require('ws');
+const url = require('url');
+const semaphore = require('semaphore');
+const compose = require('koa-compose');
+const Koa = require('koa');
 
-import ca from './certs';
-import clientEndMiddleware from './middleware/client-side/client-end';
-import serverEndMiddleware from './middleware/server-side/server-end';
-import gunzipMiddleware from './middleware/server-side/gunzip';
-import summaryMiddleware from './middleware/client-side/summary';
-import clientProxyMiddleware from './middleware/client-side/proxy';
-import serverProxyMiddleware from './middleware/server-side/proxy';
+const ca = require('./certs');
+const clientEndMiddleware = require('./middleware/client-side/client-end');
+const serverEndMiddleware = require('./middleware/server-side/server-end');
+const gunzipMiddleware = require('./middleware/server-side/gunzip');
+const summaryMiddleware = require('./middleware/client-side/summary');
+const clientProxyMiddleware = require('./middleware/client-side/proxy');
+const serverProxyMiddleware = require('./middleware/server-side/proxy');
 
 /**
  * *Vanessa Core*
@@ -54,15 +54,7 @@ const composeMiddleware = (middleware) => [
     serverEndMiddleware
 ];
 
-export default class Vanessa extends Koa {
-    sslServers: any;
-    sslSemaphores: any;
-    connectRequests: any;
-    httpServer: http.Server;
-    wsServer: WebSocket.Server;
-    httpsServer: any;
-    wssServer: any;
-
+module.exports = class Vanessa extends Koa {
     listen(...args) {
         this.sslServers = {};
         this.sslSemaphores = {};
@@ -73,10 +65,10 @@ export default class Vanessa extends Koa {
         this.wsServer = new WebSocket.Server({ server: this.httpServer });
         this.wsServer.on('error', (e) => this.emit('error', e));
         this.wsServer.on('connection', (ws, req) => {
-            ws['upgradeReq'] = req;
+            ws.upgradeReq = req;
             this._onWebSocketServerConnect.call(this, false, ws, req);
         });
-        
+
         return this.httpServer.listen(...args);
     }
 
@@ -135,12 +127,12 @@ export default class Vanessa extends Koa {
                 }
             );
             conn.on('error', (err) => {
-                if (err['errno'] !== 'ECONNRESET' && err['code'] !== 'ECONNRESET') {
+                if (err.code !== 'ECONNRESET') {
                     this.emit('error', err);
                 }
             });
             socket.on('error', (err) => {
-                if (err.errno !== 'ECONNRESET' && err['code'] !== 'ECONNRESET') {
+                if (err.code !== 'ECONNRESET') {
                     this.emit('error', err);
                 }
             });
@@ -149,14 +141,14 @@ export default class Vanessa extends Koa {
         socket.pause();
 
         /*
-         * Detect TLS from first bytes of data
-         * Inspired from https://gist.github.com/tg-x/835636
-         * used heuristic:
-         * - an incoming connection using SSLv3/TLSv1 records should start with 0x16
-         * - an incoming connection using SSLv2 records should start with the record size
-         *   and as the first record should not be very big we can expect 0x80 or 0x00 (the MSB is a flag)
-         * - everything else is considered to be unencrypted
-         */
+        * Detect TLS from first bytes of data
+        * Inspired from https://gist.github.com/tg-x/835636
+        * used heuristic:
+        * - an incoming connection using SSLv3/TLSv1 records should start with 0x16
+        * - an incoming connection using SSLv2 records should start with the record size
+        *   and as the first record should not be very big we can expect 0x80 or 0x00 (the MSB is a flag)
+        * - everything else is considered to be unencrypted
+        */
         if (head[0] == 0x16 || head[0] == 0x80 || head[0] == 0x00) {
             // URL is in the form 'hostname:port'
             let hostname = req.url.split(':', 2)[0];
@@ -202,7 +194,7 @@ export default class Vanessa extends Koa {
                 httpsServer.listen(
                     {
                         port: 0,
-                        host: this.httpServer.address()['host']
+                        host: this.httpServer.address().address
                     },
                     () => {
                         let sslServer = {
@@ -221,7 +213,7 @@ export default class Vanessa extends Koa {
         }
     }
 
-    _onHttpServerRequest(isSSL: boolean, req: http.IncomingMessage, res: http.ServerResponse) {
+    _onHttpServerRequest(isSSL, req, res) {
         const fn = compose(composeMiddleware(this.middleware));
         if (!this.listenerCount('error')) this.on('error', this.onerror);
 
@@ -243,15 +235,15 @@ export default class Vanessa extends Koa {
             }
         });
 
-        return this['handleRequest'](ctx, fn);
+        return this.handleRequest(ctx, fn);
     }
 
     _onWebSocketServerConnect(isSSL, ws, upgradeReq) {
+        let { _socket } = ws;
         let ctx = {
             isSSL: isSSL,
-            connectRequest: this.connectRequests[ws._socket.remotePort + ':' + ws._socket.localPort] || {},
+            connectRequest: this.connectRequests[_socket.remotePort + ':' + _socket.localPort] || {},
             clientToProxyWebSocket: ws,
-            proxyToServerWebSocketOptions: null,
             proxyToServerWebSocket: null
         };
         ctx.clientToProxyWebSocket.on('message', this._onWebSocketFrame.bind(this, ctx, 'message', false));
@@ -259,7 +251,10 @@ export default class Vanessa extends Koa {
         ctx.clientToProxyWebSocket.on('pong', this._onWebSocketFrame.bind(this, ctx, 'pong', false));
         ctx.clientToProxyWebSocket.on('error', this._onWebSocketError.bind(this, ctx));
         ctx.clientToProxyWebSocket.on('close', this._onWebSocketClose.bind(this, ctx, false));
-        ctx.clientToProxyWebSocket._socket.pause();
+
+        let remoteSocket = ctx.clientToProxyWebSocket._socket;
+        remoteSocket.pause();
+
         let url;
         if (upgradeReq.url == '' || /^\//.test(upgradeReq.url)) {
             let hostPort = Vanessa.parseHostAndPort(upgradeReq);
@@ -274,14 +269,7 @@ export default class Vanessa extends Koa {
                 ptosHeaders[key] = ctopHeaders[key];
             }
         }
-        ctx.proxyToServerWebSocketOptions = {
-            url: url,
-            headers: ptosHeaders
-        };
-
-        // TODO: Websocket on request
-
-        ctx.proxyToServerWebSocket = new WebSocket(ctx.proxyToServerWebSocketOptions.url, ctx.proxyToServerWebSocketOptions);
+        ctx.proxyToServerWebSocket = new WebSocket(url, { headers: ptosHeaders });
         ctx.proxyToServerWebSocket.on('message', this._onWebSocketFrame.bind(this, ctx, 'message', true));
         ctx.proxyToServerWebSocket.on('ping', this._onWebSocketFrame.bind(this, ctx, 'ping', true));
         ctx.proxyToServerWebSocket.on('pong', this._onWebSocketFrame.bind(this, ctx, 'pong', true));
@@ -289,7 +277,7 @@ export default class Vanessa extends Koa {
         ctx.proxyToServerWebSocket.on('close', this._onWebSocketClose.bind(this, ctx, true));
         ctx.proxyToServerWebSocket.on('open', () => {
             if (ctx.clientToProxyWebSocket.readyState === WebSocket.OPEN) {
-                ctx.clientToProxyWebSocket._socket.resume();
+                remoteSocket.resume();
             }
         });
     }
@@ -302,10 +290,10 @@ export default class Vanessa extends Koa {
                     destWebSocket.send(data, flags);
                     break;
                 case 'ping':
-                    destWebSocket.ping(data, flags, false);
+                    destWebSocket.ping(data, false);
                     break;
                 case 'pong':
-                    destWebSocket.pong(data, flags, false);
+                    destWebSocket.pong(data, false);
                     break;
             }
         } else {
@@ -338,7 +326,7 @@ export default class Vanessa extends Koa {
         }
     }
 
-    static parseHostAndPort(req, defaultPort?: any) {
+    static parseHostAndPort(req, defaultPort) {
         let host = req.headers.host;
         if (!host) {
             return null;
