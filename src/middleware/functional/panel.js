@@ -27,7 +27,11 @@ const routerMiddleware = compose([
 
 const panelMiddleware = async (ctx, next) => {
     if (ctx.host === 'vanes.sa') {
-        await routerMiddleware(ctx, async () => {});
+        if (ctx.protocol === 'http') {
+            ctx.redirect(ctx.url.replace('http:', 'https:'));
+        } else {
+            await routerMiddleware(ctx, async () => {});
+        }
     } else {
         await next();
     }
