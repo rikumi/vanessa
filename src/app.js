@@ -7,6 +7,7 @@ const panelMiddleware = require('./middleware/functional/panel');
 const counterMiddleware = require('./middleware/functional/counter');
 const collectMiddleware = require('./middleware/functional/collect');
 const ruleMiddleware = require('./middleware/functional/rule');
+const timeoutMiddleware = require('./middleware/functional/timeout');
 
 process.on('uncaughtException', (e) => console.error(chalk.bgRed.black('[exception]'), e));
 process.on('unhandledRejection', (e) => console.error(chalk.bgRed.black('[rejection]'), e));
@@ -18,4 +19,5 @@ vanessa.use(panelMiddleware);
 vanessa.use(counterMiddleware);
 vanessa.use(collectMiddleware);
 vanessa.use(ruleMiddleware);
+vanessa.use(timeoutMiddleware);
 vanessa.listen(8672);

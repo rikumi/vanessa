@@ -36,6 +36,9 @@ const getHistoryDetail = (ctx) => {
         ctx.throw(403);
     } else {
         let { summary, request, response } = detail;
+        if (!detail.res.finished) {
+            response = {};
+        }
         ctx.body = {
             id,
             request,

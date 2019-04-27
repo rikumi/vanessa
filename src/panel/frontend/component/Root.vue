@@ -17,15 +17,18 @@
                     <div class="history" v-for="history in histories.slice().reverse()"
                         :key='history.id'
                         :class='{ selected: showingHistory && showingHistory.id === history.id }'
-                        :style='getHistoryStyles(history)'
                         @click='showHistoryDetail(history)'>
-                        <img class="icon" :src="getIcon(history)">
-                        <div class="id">{{ history.id }}</div>
-                        <div class="ip">{{ history.ip }}</div>
-                        <div class="method">{{ history.method }}</div>
-                        <div class="url">{{ history.url }}</div>
-                        <div class="status">{{ history.status }}</div>
-                        <div class="type">{{ history.type }}</div>
+                        <div class="row row-1">
+                            <img class="icon" :src="getIcon(history)">
+                            <div class="method">{{ history.method }}</div>
+                            <div class="url">{{ history.url }}</div>
+                        </div>
+                        <div class="row row-2">
+                            <div class="id">#{{ history.id }}</div>
+                            <div class="ip">From: {{ history.ip }}</div>
+                            <div class="status">Status: {{ history.status }}</div>
+                            <div class="type">Type: {{ history.type || '[unspecified]' }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -38,7 +41,7 @@
                     @click="downloadRequest"
                 >Request body</div>
                 <div class="download"
-                    v-if="showingHistory && showingHistory.response.status"
+                    v-if="showingHistory && showingHistory.response && showingHistory.response.status"
                     @click="downloadResponse"
                 >Response body</div>
             </div>
@@ -57,6 +60,7 @@ import iconJs from '../assets/js.svg';
 import iconJson from '../assets/json.svg';
 import iconImage from '../assets/image.svg';
 import iconText from '../assets/text.svg';
+import iconLoading from '../assets/loading.svg';
 
 monaco.editor.defineTheme('ayu-light', theme);
 
@@ -96,6 +100,12 @@ export default {
     watch: {
         hasEditor() {
             setTimeout(() => this.editor.layout(), 0);
+        },
+        showingHistory() {
+            let history = this.showingHistory;
+            if (history) {
+                this.setContent('history-' + history.id + '.json', JSON.stringify(this.showingHistory, null, 4), false);
+            }
         }
     },
     methods: {
@@ -108,6 +118,12 @@ export default {
             let next = (await api.get('/history/~' + id)).data;
             let finishedHistory = this.histories.filter(k => k.id < id);
             this.histories = finishedHistory.concat(next);
+            if (this.showingHistory && !this.showingHistory.response.status) {
+                let updated = next.find(k => k.id === this.showingHistory.id);
+                if (updated.status) {
+                    this.showHistoryDetail(this.showingHistory);
+                }
+            }
             setTimeout(this.refreshHistory.bind(this), 500);
         },
         async toggleRule(rule) {
@@ -130,25 +146,12 @@ export default {
         setContent(title, content, editable) {
             this.hasEditor = true;
             this.editorTitle = title;
-            try {
-                this.editor.getModel().setValue(content);
-            } catch (e) {
-                console.log(e, e.message)
-                if (!/Unexpected usage/.test(e.message)) {
-                    throw e;
-                }
-            }
+            this.editor.getModel().setValue(content);
             this.editor.updateOptions({ readOnly: !editable });
             this.editor.setScrollPosition({ scrollTop: 0 });
         },
-        getHistoryStyles(history) {
-            return {
-                opacity: history.status ? 1 : 0.5
-            }
-        },
         async showHistoryDetail(history) {
             this.showingHistory = (await api.get('/history/' + history.id)).data;
-            this.setContent('history-' + history.id + '.json', JSON.stringify(this.showingHistory, null, 4), false);
         },
         downloadRequest() {
             window.open('/api/history/' + this.showingHistory.id + '/req');
@@ -157,6 +160,10 @@ export default {
             window.open('/api/history/' + this.showingHistory.id + '/res');
         },
         getIcon(history) {
+            if (!history.status) {
+                return iconLoading;
+            }
+
             let [type, subtype = ''] = history.type.split('/');
             if (/\.(jpe?g|png|svg|gif|bmp|webp)?$/.test(history.url) || type === 'image') {
                 return iconImage;
@@ -218,7 +225,7 @@ input, textarea {
     height: 100%;
 }
 .left {
-    width: 400px;
+    width: 30%;
     height: 100%;
     flex: 0 0 auto;
     background: #fafafa;
@@ -322,56 +329,61 @@ input, textarea {
             width: 720px;
             flex: 0 0 auto;
             display: flex;
-            flex-direction: row;
-            align-items: center;
+            flex-direction: column;
             padding: 5px 15px;
             box-sizing: border-box;
             cursor: pointer;
 
-            >* {
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                min-width: 0;
-            }
+            .row {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                width: 100%;
 
-            .icon {
-                width: 14px;
-                height: 14px;
-                margin-right: 10px;
-            }
+                >* {
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    min-width: 0;
+                }
 
-            .id {
-                flex: 3 0 0;
-            }
+                .icon {
+                    width: 14px;
+                    height: 14px;
+                    margin-right: 10px;
+                }
 
-            .ip {
-                flex: 4 0 0;
-            }
+                .id {
+                    width: 50px;
+                    margin-left: 24px;
+                }
 
-            .method {
-                flex: 3 0 0;
-            }
+                .method {
+                    width: 50px;                    
+                }
 
-            .url {
-                flex: 16 0 0;
-            }
+                .url {
+                    flex: 1 1 0;
+                }
 
-            .status {
-                flex: 2 0 0;
-            }
+                &.row-2 {
+                    font-size: 12px;
+                    margin-top: 2px;
+                    opacity: .7;
 
-            .type {
-                flex: 10 0 0;
+                    >*:not(:first-child) + * {
+                        margin-left: 10px;
+                    }
+                }
             }
 
             &:hover {
-                background: #f0f0f0;
+                background: #f3f3f3;
             }
 
             &.selected {
                 color: #fd8844;
-                background: #eeeeee;
+                background: #ececec;
             }
         }
 
@@ -400,6 +412,7 @@ input, textarea {
 .right {
     height: 100%;
     flex: 1 1 0;
+    overflow: hidden;
     background: #ffffff;
     display: flex;
     flex-direction: column;
