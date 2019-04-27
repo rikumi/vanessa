@@ -1,4 +1,5 @@
 const { Readable, Writable } = require('stream');
+const collect = require('collect-all');
 
 const fromString = (str) => {
     let readable = new Readable();
@@ -7,11 +8,8 @@ const fromString = (str) => {
 }
 
 const toString = async (stream) => {
-    return new Promise<string>((resolve, reject) => {
-        let buffer = new Buffer('');
-        stream.on('data', (chunk) => buffer.write(chunk));
-        stream.on('end', () => resolve(buffer.toString()));
-        stream.on('error', reject);
+    return new Promise((resolve) => {
+        stream.pipe(collect((buffer) => resolve(buffer.toString())));
     });
 };
 

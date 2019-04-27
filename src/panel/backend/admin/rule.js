@@ -10,27 +10,8 @@ const addOrModifyRule = async (ctx) => {
     }
 
     let content = await toString(ctx.req);
-    let { options = {} } = await getRule(name) || {};
 
-    await setRule({
-        name, content, options
-    });
-    ctx.body = 'OK';
-};
-
-const addOrModifyRuleOptions = async (ctx) => {
-    let name = ctx.params.name || '';
-    name = name.trim();
-    if (!name) {
-        ctx.throw(400);
-    }
-
-    let options = JSON.parse(await toString(ctx.req));
-    let { content = '' } = (await getRule(name)) || {};
-
-    await setRule({
-        name, content, options
-    });
+    await setRule(name, content);
     ctx.body = 'OK';
 };
 
@@ -47,6 +28,5 @@ const deleteRule = async (ctx) => {
 
 module.exports = {
     addOrModifyRule,
-    addOrModifyRuleOptions,
     deleteRule
 };

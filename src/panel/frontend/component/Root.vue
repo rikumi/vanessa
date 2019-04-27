@@ -6,8 +6,10 @@
                 <div class="section-title">Rules</div>
                 <button class="disable-all" @click="disableAllRules()">Disable All</button>
             </div>
-            <div class="rule" v-for="rule in rules" :key="rule.name" :class="{ selected: rule.isSelected }" @click="toggleRule(rule)">
-                {{ rule.name }}
+            <div class="rules">
+                <div class="rule" v-for="rule in rules" :key="rule.name" :class="{ selected: rule.isSelected }" @click="toggleRule(rule)">
+                    {{ rule.name }}
+                </div>
             </div>
             <div class="section">
                 <div class="section-title">History</div>
@@ -36,11 +38,15 @@
         <div class="right" v-show="hasEditor">
             <div class="editor-title-bar">
                 <div class="editor-title">{{ editorTitle }}</div>
-                <div class="download"
+                <div class="editor-button"
+                    v-if="showingRule"
+                    @click="saveRule"
+                >Save</div>
+                <div class="editor-button"
                     v-if="showingHistory"
                     @click="downloadRequest"
                 >Request body</div>
-                <div class="download"
+                <div class="editor-button"
                     v-if="showingHistory && showingHistory.response && showingHistory.response.status"
                     @click="downloadResponse"
                 >Response body</div>
@@ -69,6 +75,7 @@ export default {
         rules: [],
         histories: [],
         editor: null,
+        showingRule: null,
         showingHistory: null,
         editorTitle: '',
         hasEditor: false,
@@ -101,9 +108,18 @@ export default {
         hasEditor() {
             setTimeout(() => this.editor.layout(), 0);
         },
+        showingRule() {
+            let rule = this.showingRule;
+            console.log('showing rule', rule)
+            if (rule) {
+                this.showingHistory = null;
+                this.setContent(rule.name, rule.content, true);
+            }
+        },
         showingHistory() {
             let history = this.showingHistory;
             if (history) {
+                this.showingRule = null;
                 this.setContent('history-' + history.id + '.json', JSON.stringify(this.showingHistory, null, 4), false);
             }
         }
@@ -113,18 +129,27 @@ export default {
             this.rules = (await api.get('/rule')).data;
         },
         async refreshHistory() {
+            let fetchFromId;
             let unfinishedHistory = this.histories.filter(k => !k.status);
-            let { id = 0 } = unfinishedHistory[0] || {};
-            let next = (await api.get('/history/~' + id)).data;
-            let finishedHistory = this.histories.filter(k => k.id < id);
-            this.histories = finishedHistory.concat(next);
+
+            if (unfinishedHistory[0]) {
+                fetchFromId = unfinishedHistory[0].id;
+            } else if (this.histories.length) {
+                fetchFromId = this.histories.slice(-1)[0].id + 1;
+            } else {
+                fetchFromId = 0;
+            }
+
+            let prev = this.histories.filter(k => k.id < fetchFromId);
+            let next = (await api.get('/history/~' + fetchFromId)).data;
+            this.histories = prev.concat(next);
             if (this.showingHistory && !this.showingHistory.response.status) {
                 let updated = next.find(k => k.id === this.showingHistory.id);
                 if (updated.status) {
                     this.showHistoryDetail(this.showingHistory);
                 }
             }
-            setTimeout(this.refreshHistory.bind(this), 500);
+            setTimeout(this.refreshHistory.bind(this), 1000);
         },
         async toggleRule(rule) {
             if (rule.isSelected) {
@@ -134,14 +159,23 @@ export default {
                 await api.post('/rule/' + rule.name);
                 this.reload();
             }
-            let ruleContent = (await api.get('/rule/' + rule.name)).data.content;
-
-            this.showingHistory = null;
-            this.setContent(rule.name, ruleContent, true);
+            let content = (await api.get('/rule/' + rule.name)).data;
+            this.showingRule = {
+                name: rule.name,
+                content
+            };
         },
         async disableAllRules() {
             await api.delete('/rule');
             this.reload();
+        },
+        async saveRule() {
+            this.showingRule.content = this.editor.getModel().getValue();
+            await api.post('/admin/rule/' + this.showingRule.name, this.showingRule.content, {
+                headers: {
+                    'content-type': 'text/plain'
+                }
+            });
         },
         setContent(title, content, editable) {
             this.hasEditor = true;
@@ -280,19 +314,30 @@ input, textarea {
         }
     }
 
+    .rules {
+        padding: 0 5px;
+    }
+
     .rule {
         color: #7f7c83;
         font-size: 13px;
-        padding: 5px 35px;
+        padding: 6px 29px;
         cursor: pointer;
         display: flex;
         flex-direction: row;
         position: relative;
+        width: 30%;
+        margin: 1%;
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
 
         &::before {
             content: '';
             position: absolute;
-            left: 15px;
+            left: 10px;
             top: 50%;
             margin-top: -4px;
             width: 8px;
@@ -437,7 +482,7 @@ input, textarea {
             background: #ffffff;
         }
 
-        .download {
+        .editor-button {
             padding: 3px 5px;
             border-radius: 2px;
             margin-left: 15px;

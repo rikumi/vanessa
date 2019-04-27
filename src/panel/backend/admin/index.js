@@ -14,7 +14,6 @@ adminRouter.use(async (ctx, next) => {
 
 adminRouter.get('/info', getInfo);
 adminRouter.post('/rule/:name', addOrModifyRule);
-adminRouter.put('/rule/:name', addOrModifyRuleOptions);
 adminRouter.delete('/rule/:name', deleteRule);
 
 module.exports = adminRouter;

@@ -12,14 +12,14 @@ const ruleMiddleware = async (ctx, next) => {
     let middleware = [];
 
     for (let script of scripts) {
-        let sandbox = vm.createContext({
-            ...global,
-            use: middleware.push.bind(middleware)
-        });
-
-        vm.runInContext(script.content, sandbox);
+        let sandbox = vm.createContext(global);
+        sandbox.module = {};
+        sandbox.exports = sandbox.module.exports = (ctx, next) => next();
+        vm.runInContext(script, sandbox);
+        middleware.push(sandbox.module.exports);
     }
 
+    ctx.summary.rules = selectedRules;
     let composed = compose(middleware);
     await composed(ctx, next);
 };

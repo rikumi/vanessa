@@ -3,7 +3,6 @@ const os = require('os');
 const path = require('path');
 const glob = require('glob');
 const util = require('util');
-const yaml = require('yaml');
 const mkdirp = require('mkdirp');
 
 const ruleDir = path.join(os.homedir(), '.vanessa', 'rules');
@@ -28,34 +27,17 @@ const getRule = async (name) => {
         return null;
     }
 
-    let content = (await readFile(filePath)).toString();
-    let options = {};
-
-    try {
-        options = yaml.parse(fs.readFileSync(filePath + '.yaml').toString());
-    } catch (e) {}
-
-    return {
-        name,
-        content,
-        options
-    };
+    return (await readFile(filePath)).toString();
 };
 
-const getAllRules = async () => {
-    return (await Promise.all(getAllRuleNames().map(getRule))).filter((r) => r);
-};
-
-const setRule = async ({ name, content, options = {}}) => {
+const setRule = async (name, content) => {
     let filePath = path.join(ruleDir, name);
     await writeFile(filePath, content);
-    await writeFile(filePath + '.yaml', yaml.stringify(options));
 }
 
 const removeRule = async (name) => {
     let filePath = path.join(ruleDir, name);
     await unlink(filePath);
-    await unlink(filePath + '.yaml');
 }
 
 module.exports = {
@@ -63,7 +45,6 @@ module.exports = {
     loaders,
     getAllRuleNames,
     getRule,
-    getAllRules,
     setRule,
     removeRule
 };

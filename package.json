@@ -2,12 +2,15 @@
   "name": "vanessa",
   "version": "1.0.0",
   "description": "An HTTPS MITM Proxy based on Koa.js",
-  "main": "src/app.ts",
+  "main": "src/app.js",
   "repository": "https://github.com/rikumi/vanessa",
   "author": "rikumi <riku.mi@outlook.com>",
   "license": "MIT",
   "scripts": {
     "start": "nodemon src/app.js"
+  },
+  "bin": {
+    "vanessa": "src/app.js"
   },
   "dependencies": {
     "axios": "^0.18.0",
@@ -66,7 +69,7 @@
         "module-resolver",
         {
           "alias": {
-            "vue": "vue/dist/vue.min"
+            "vue": "vue/dist/vue.common"
           }
         }
       ]
