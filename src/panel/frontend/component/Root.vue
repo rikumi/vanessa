@@ -208,7 +208,7 @@ button, input, textarea {
     font-family: inherit;
 }
 ::selection {
-    background: var(--color-primary-bg);
+    background: rgba(0, 0, 0, .1);
 }
 * {
     text-size-adjust: 100%;
@@ -424,6 +424,7 @@ input, textarea {
         align-items: center;
         box-shadow: inset 0 -1px 0 #f0f0f0;
         font-size: 12px;
+        user-select: none;
         
         .editor-title {
             font-size: 13px;
