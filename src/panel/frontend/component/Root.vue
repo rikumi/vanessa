@@ -78,7 +78,8 @@ export default {
             readOnly: true,
             wordWrap: 'on',
             theme: 'ayu-light',
-            renderLineHighlight: 'none'
+            renderLineHighlight: 'none',
+            contextmenu: false
         });
         window.addEventListener('resize', () => {
             this.editor.layout();
@@ -174,6 +175,9 @@ button, input, textarea {
 * {
     text-size-adjust: 100%;
     -ms-overflow-style: none;
+}
+input, textarea {
+    outline: none;
 }
 </style>
 <style lang="less" scoped>
@@ -343,10 +347,10 @@ button, input, textarea {
         &::-webkit-scrollbar-thumb {
             width: 10px;
             height: 10px;
-            background-color: rgba(0, 0, 0, .2);
+            background-color: rgba(0, 0, 0, .1);
 
             &:hover {
-                background-color: rgba(0, 0, 0, .3);
+                background-color: rgba(0, 0, 0, .2);
             }
         }
 
