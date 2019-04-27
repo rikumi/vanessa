@@ -24,6 +24,7 @@
     "listen-random-port": "^1.0.0",
     "mkdirp": "^0.5.1",
     "monaco-editor": "^0.16.2",
+    "monaco-themes": "^0.2.5",
     "multiplex-server": "^0.0.2",
     "node-forge": "^0.8.2",
     "nodemon": "^1.18.11",

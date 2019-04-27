@@ -38,14 +38,8 @@ const getHistoryDetail = (ctx) => {
         let { summary, request, response } = detail;
         ctx.body = {
             id,
-            request: {
-                body: undefined,
-                ...request
-            },
-            response: {
-                body: undefined,
-                ...response
-            },
+            request,
+            response,
             ...summary
         };
     }
@@ -64,6 +58,8 @@ const getRequestBody = (ctx) => {
             ctx.throw(404);
         } else {
             ctx.set('content-type', detail.get('content-type'));
+            ctx.set('content-length', detail.get('content-length'));
+            ctx.set('content-encoding', detail.get('content-encoding'));
             ctx.body = body;
         }
     }
@@ -82,10 +78,11 @@ const getResponseBody = (ctx) => {
             ctx.throw(404);
         } else {
             ctx.set('content-type', detail.response.headers['content-type']);
-            ctx.set('content-disposion', detail.response.headers['content-disposion']);
+            ctx.set('content-length', detail.response.headers['content-length']);
             ctx.set('content-encoding', detail.response.headers['content-encoding']);
+            ctx.set('content-disposion', detail.response.headers['content-disposion']);
             ctx.body = body;
-        }
+        }s
     }
 };
 

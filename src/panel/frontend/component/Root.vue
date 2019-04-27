@@ -1,10 +1,10 @@
 <template>
     <div class="app-root">
         <div class="left">
-            <div class="title">Vanessa Control Panel</div>
+            <div class="title">Vanessa</div>
             <div class="section">
                 <div class="section-title">Rules</div>
-                <button class="deselect-all" @click="deselectAllRules()">Deselect All</button>
+                <button class="disable-all" @click="disableAllRules()">Disable All</button>
             </div>
             <div class="rule" v-for="rule in rules" :key="rule.name" :class="{ selected: rule.isSelected }" @click="toggleRule(rule)">
                 {{ rule.name }}
@@ -29,7 +29,7 @@
                 </div>
             </div>
         </div>
-        <div class="right">
+        <div class="right" v-show="hasEditor">
             <div class="editor-title-bar">
                 <div class="editor-title">{{ editorTitle }}</div>
                 <div class="download"
@@ -49,9 +49,9 @@
 import api from '../api';
 import { setTimeout } from 'timers';
 import * as monaco from 'monaco-editor';
-import theme from '../theme.json';
+import theme from '../ayu-light.json';
 
-monaco.editor.defineTheme('vanessa', theme);
+monaco.editor.defineTheme('ayu-light', theme);
 
 export default {
     data: () => ({
@@ -60,6 +60,7 @@ export default {
         editor: null,
         showingHistory: null,
         editorTitle: '',
+        hasEditor: false,
     }),
     created() {
         this.reload();
@@ -71,14 +72,22 @@ export default {
                 enabled: false
             },
             language: 'javascript',
-            fontFamily: '"Monaco", "Fira Code", "Source Code Pro", monospace',
+            fontFamily: '"Fira Code", "Monaco", "Source Code Pro", monospace',
+            fontLigatures: true,
+            fontSize: 13,
             readOnly: true,
             wordWrap: 'on',
-            theme: 'vanessa'
+            theme: 'ayu-light',
+            renderLineHighlight: 'none'
         });
         window.addEventListener('resize', () => {
             this.editor.layout();
         });
+    },
+    watch: {
+        hasEditor() {
+            setTimeout(() => this.editor.layout(), 0);
+        }
     },
     methods: {
         async reload() {
@@ -105,14 +114,23 @@ export default {
             this.showingHistory = null;
             this.setContent(rule.name, ruleContent, true);
         },
-        async deselectAllRules() {
+        async disableAllRules() {
             await api.delete('/rule');
             this.reload();
         },
         setContent(title, content, editable) {
+            this.hasEditor = true;
             this.editorTitle = title;
-            this.editor.getModel().setValue(content);
+            try {
+                this.editor.getModel().setValue(content);
+            } catch (e) {
+                console.log(e, e.message)
+                if (!/Unexpected usage/.test(e.message)) {
+                    throw e;
+                }
+            }
             this.editor.updateOptions({ readOnly: !editable });
+            this.editor.setScrollPosition({ scrollTop: 0 });
         },
         getHistoryStyles(history) {
             return {
@@ -121,13 +139,13 @@ export default {
         },
         async showHistoryDetail(history) {
             this.showingHistory = (await api.get('/history/' + history.id)).data;
-            this.setContent('History ' + history.id, JSON.stringify(this.showingHistory, null, 4), false);
+            this.setContent('history-' + history.id + '.json', JSON.stringify(this.showingHistory, null, 4), false);
         },
         downloadRequest() {
-            window.open('/history/' + this.showingHistory.id + '/req');
+            window.open('/api/history/' + this.showingHistory.id + '/req');
         },
         downloadResponse() {
-            window.open('/history/' + this.showingHistory.id + '/res');
+            window.open('/api/history/' + this.showingHistory.id + '/res');
         }
     }
 }
@@ -139,8 +157,7 @@ html {
     font-family: -apple-system, BlinkMacSystemFont, 'Noble Scarlet', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans CN', 'Microsoft YaHei UI', sans-serif;
     font-size: 13px;
     overflow: hidden;
-    background: #0b0b0b;
-    color: #7f7c83;
+    color: #6c7680;
 }
 body {
     height: 100%;
@@ -180,8 +197,8 @@ button, input, textarea {
         text-transform: uppercase;
         color: #434144;
         font-size: 12px;
-        padding: 13px 15px;
-        height: 40px;
+        padding: 13px 15px 8px;
+        height: 35px;
         box-sizing: border-box;
     }
 
@@ -195,6 +212,7 @@ button, input, textarea {
         display: flex;
         flex-direction: row;
         border-top: 1px solid #eeeeee;
+        margin: 5px 0;
 
         .section-title {
             flex: 1 1 0;
@@ -223,7 +241,7 @@ button, input, textarea {
     .rule {
         color: #7f7c83;
         font-size: 13px;
-        padding: 10px 35px;
+        padding: 5px 35px;
         cursor: pointer;
         display: flex;
         flex-direction: row;
@@ -243,12 +261,12 @@ button, input, textarea {
         }
 
         &.selected {
-            color: #136b88;
+            color: #fd8844;
             background: #eeeeee;
 
             &::before {
                 border: 0;
-                background: #136b88;
+                background: #fd8844;
             }
         }
     }
@@ -270,7 +288,7 @@ button, input, textarea {
             flex: 0 0 auto;
             display: flex;
             flex-direction: row;
-            padding: 3px 15px;
+            padding: 5px 15px;
             box-sizing: border-box;
             cursor: pointer;
 
@@ -310,7 +328,7 @@ button, input, textarea {
             }
 
             &.selected {
-                color: #136b88;
+                color: #fd8844;
                 background: #eeeeee;
             }
         }
@@ -349,19 +367,24 @@ button, input, textarea {
         display: flex;
         flex-direction: row;
         align-items: center;
+        box-shadow: inset 0 -1px 0 #f0f0f0;
         font-size: 12px;
         
         .editor-title {
-            text-transform: uppercase;
+            font-size: 13px;
             color: #434144;
-            padding: 13px 15px;
+            padding: 10px 15px 13px;
+            height: 100%;
             box-sizing: border-box;
+            border-top: 2px solid #fd8844;
+            border-right: 1px solid #f0f0f0;
+            background: #ffffff;
         }
 
         .download {
             padding: 3px 5px;
             border-radius: 2px;
-            margin-left: 5px;
+            margin-left: 15px;
             background: #f7f7f7;
             cursor: pointer;
 

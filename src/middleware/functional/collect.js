@@ -4,7 +4,7 @@ const { steal } = require('../../util/stream');
 const collectMiddleware = async (ctx, next) => {
     steal(ctx.req)
         .then((data) => {
-            ctx.request['body'] = data;
+            ctx.request.body = data;
         })
         .catch();
 
