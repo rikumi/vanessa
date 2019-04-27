@@ -19,6 +19,7 @@
                         :class='{ selected: showingHistory && showingHistory.id === history.id }'
                         :style='getHistoryStyles(history)'
                         @click='showHistoryDetail(history)'>
+                        <img class="icon" :src="getIcon(history)">
                         <div class="id">{{ history.id }}</div>
                         <div class="ip">{{ history.ip }}</div>
                         <div class="method">{{ history.method }}</div>
@@ -49,7 +50,13 @@
 import api from '../api';
 import { setTimeout } from 'timers';
 import * as monaco from 'monaco-editor';
-import theme from '../ayu-light.json';
+import theme from '../assets/ayu-light.json';
+import iconHtml from '../assets/html.svg';
+import iconCss from '../assets/css.svg';
+import iconJs from '../assets/js.svg';
+import iconJson from '../assets/json.svg';
+import iconImage from '../assets/image.svg';
+import iconText from '../assets/text.svg';
 
 monaco.editor.defineTheme('ayu-light', theme);
 
@@ -79,7 +86,8 @@ export default {
             wordWrap: 'on',
             theme: 'ayu-light',
             renderLineHighlight: 'none',
-            contextmenu: false
+            contextmenu: false,
+            scrollBeyondLastLine: false
         });
         window.addEventListener('resize', () => {
             this.editor.layout();
@@ -95,10 +103,10 @@ export default {
             this.rules = (await api.get('/rule')).data;
         },
         async refreshHistory() {
-            let finishedHistory = this.histories.filter(k => k.status);
-            let { id = -1 } = finishedHistory.slice(-1)[0] || {};
-            let next = (await api.get('/history/~' + (id + 1))).data;
-            finishedHistory = this.histories.filter(k => k.id <= id);
+            let unfinishedHistory = this.histories.filter(k => !k.status);
+            let { id = 0 } = unfinishedHistory[0] || {};
+            let next = (await api.get('/history/~' + id)).data;
+            let finishedHistory = this.histories.filter(k => k.id < id);
             this.histories = finishedHistory.concat(next);
             setTimeout(this.refreshHistory.bind(this), 500);
         },
@@ -147,6 +155,29 @@ export default {
         },
         downloadResponse() {
             window.open('/api/history/' + this.showingHistory.id + '/res');
+        },
+        getIcon(history) {
+            let [type, subtype = ''] = history.type.split('/');
+            if (/\.(jpe?g|png|svg|gif|bmp|webp)?$/.test(history.url) || type === 'image') {
+                return iconImage;
+            }
+            if (/\.html?$/.test(history.url) || subtype === 'html') {
+                return iconHtml;
+            }
+            if (/\.css?$/.test(history.url) || subtype === 'css') {
+                return iconCss;
+            }
+            if (/\.js?$/.test(history.url) || subtype === 'javascript') {
+                return iconJs;
+            }
+            if (/\.json?$/.test(history.url) || subtype === 'json') {
+                return iconJson;
+            }
+            if (type === 'text') {
+                return iconText;
+            }
+
+            return 'data:image/svg+xml;utf8,<svg></svg>';
         }
     }
 }
@@ -292,6 +323,7 @@ input, textarea {
             flex: 0 0 auto;
             display: flex;
             flex-direction: row;
+            align-items: center;
             padding: 5px 15px;
             box-sizing: border-box;
             cursor: pointer;
@@ -303,8 +335,14 @@ input, textarea {
                 min-width: 0;
             }
 
+            .icon {
+                width: 14px;
+                height: 14px;
+                margin-right: 10px;
+            }
+
             .id {
-                flex: 2 0 0;
+                flex: 3 0 0;
             }
 
             .ip {
