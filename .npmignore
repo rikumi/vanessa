@@ -9,7 +9,6 @@ Desktop.ini
 *~
 *.code-workspace
 .cache
-dist
 *.key
 *.pem
 *.pub

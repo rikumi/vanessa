@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
+const { argv } = require('yargs');
+
 const Vanessa = require('./index');
 
 const errorMiddleware = require('./middleware/functional/error');
@@ -21,4 +23,7 @@ vanessa.use(counterMiddleware);
 vanessa.use(collectMiddleware);
 vanessa.use(ruleMiddleware);
 vanessa.use(timeoutMiddleware);
-vanessa.listen(8672);
+
+const { port = 8099 } = argv;
+vanessa.listen(port);
+console.log('⚉ Vanessa listening at', port);
