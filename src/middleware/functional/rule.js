@@ -29,7 +29,15 @@ const ruleMiddleware = async (ctx, next) => {
             log(ctx, script.name, 'trace', e.stack);
         }
         sandbox.on('console.trace', trace);
-        middleware.push(sandbox.run(script.content));
+
+        try {
+            let mw = sandbox.run(script.content);
+            if (mw) {
+                middleware.push(mw);
+            }
+        } catch (e) {
+            trace(e);
+        }
     }
 
     ctx.summary.rules = selectedRules;

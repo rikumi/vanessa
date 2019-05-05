@@ -69,7 +69,8 @@
                             <div class='log bottom'></div>
                         </div>
                     </div>
-                    <div class='logs-empty' v-else>Use <code>console.log</code>/<code>console.error</code> to print logs here.</div>
+                    <div class='logs-empty' v-else-if='showingRule.logs'>Use <code>console.log</code>/<code>console.error</code> to print logs here.</div>
+                    <div class='logs-loading' v-else>Retrieving logs…</div>
                 </div>
             </div>
         </div>
@@ -262,8 +263,8 @@ export default {
         async refreshLogs() {
             let { showingRule } = this;
             if (showingRule) {
-                showingRule.logs = showingRule.logs || [];
-                let fetchFromId = showingRule.logs.length && showingRule.logs.slice(-1)[0].id + 1;
+                let { logs = [] } = showingRule;
+                let fetchFromId = logs.length && logs.slice(-1)[0].id + 1;
                 let wrapper = this.$refs.logWrapper;
                 let scroller = wrapper && wrapper.parentElement;
                 let isAtBottom = !wrapper ||
@@ -273,7 +274,8 @@ export default {
                 let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
 
                 if (this.showingRule == showingRule) {
-                    showingRule.logs = showingRule.logs.concat(next);
+                    logs = logs.concat(next);
+                    this.showingRule.logs = logs;
                     this.showingRule = showingRule;
                 }
                 if (isAtBottom) {
@@ -799,9 +801,18 @@ input, textarea {
                 }
             }
 
-            .logs-empty {
+            .logs-empty,
+            .logs-loading {
+                height: 90%;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                font-size: 15px;
+                opacity: .7;
+
                 code {
-                    font-family: "Fira Code", "Monaco", "Source Code Pro", monospace;
+                    font-family: 'Fira Code', 'Monaco', 'Source Code Pro', 'Courier New', Courier, monospace;
                     margin: 0 5px;
                     padding: 2px 3px;
                     background: #f7f7f7;

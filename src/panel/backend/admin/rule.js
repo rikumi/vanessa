@@ -34,7 +34,8 @@ const getLogsByRule = async (ctx) => {
     if (!name) {
         ctx.throw(400);
     } else if (!logsByRuleName[name]) {
-        ctx.throw(404);
+        ctx.body = [];
+        return;
     }
     
     ctx.body = logsByRuleName[name].slice(from);
