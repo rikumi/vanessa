@@ -107,6 +107,19 @@ export default {
             contextmenu: false,
             scrollBeyondLastLine: false
         });
+        this.editor.addAction({
+            id: 'vanessa-save-rule',
+            label: 'Save Rule',
+            keybindings: [
+                monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S,
+            ],
+            run: (editor) => {
+                if (this.showingRule) {
+                    this.saveRule();
+                }
+                return null;
+            }
+        });
         this.showInfo();
         window.addEventListener('resize', () => {
             this.editor.layout();
@@ -175,6 +188,17 @@ export default {
         },
         async addRule() {
             let name = this.newRuleName;
+            if (!name) {
+                return;
+            }
+            if (!/\.(js)$/.test(name)) {
+                name += '.js';
+            }
+            if (!/^[0-9a-z\-]+\.[0-9a-z]+$/.test(name)) {
+                alert('Rule name should match /^[0-9a-z\\-]+$/');
+                this.newRuleName = '';
+                return;
+            }
             await api.post('/admin/rule/' + name, `module.exports = async (ctx, next) => {\n    await next();\n};`);
             await this.reload();
             this.newRuleName = '';

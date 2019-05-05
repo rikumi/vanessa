@@ -8,7 +8,7 @@ const fromString = (str) => {
 }
 
 const toString = async (stream) => {
-    if (stream._readableState && stream._readableState.ended) {
+    if (stream.finished) {
         console.log('stream ended');
         return '';
     }
