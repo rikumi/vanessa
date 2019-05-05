@@ -13,7 +13,7 @@
                     <div class='rule-remove' @click.stop='removeRule(rule)'></div>
                 </div>
                 <div class='rule-add'>
-                    <input v-model='newRuleName' placeholder='New rule...' @blur='addRule'/>
+                    <input v-model='newRuleName' placeholder='New rule...' @blur='addRule' @keypress.enter='addRule'/>
                 </div>
             </div>
             <div class='section'>
@@ -173,8 +173,12 @@ export default {
             }
             setTimeout(this.refreshHistory.bind(this), 1000);
         },
-        addRule() {
-            let { newRuleName } = this;
+        async addRule() {
+            let name = this.newRuleName;
+            await api.post('/admin/rule/' + name, `module.exports = async (ctx, next) => {\n    await next();\n};`);
+            await this.reload();
+            this.newRuleName = '';
+            this.showRule({ name });
         },
         async showRule(rule) {
             let content = (await api.get('/rule/' + rule.name)).data;
@@ -193,11 +197,13 @@ export default {
             }
         },
         async removeRule(rule) {
-            await api.delete('/admin/rule/' + rule.name);
-            if (this.showingRule && rule.name === this.showingRule.name) {
-                this.showInfo();
+            if (confirm(`Confirm to remove rule ${rule.name}.`)) {
+                await api.delete('/admin/rule/' + rule.name);
+                if (this.showingRule && rule.name === this.showingRule.name) {
+                    this.showInfo();
+                }
+                this.reload();
             }
-            this.reload();
         },
         async disableAllRules() {
             await api.delete('/rule');
@@ -474,6 +480,10 @@ input, textarea {
             font-size: 13px;
             background: #fafafa;
             border: none;
+
+            &:not(:focus) {
+                cursor: pointer;
+            }
         }
     }
 

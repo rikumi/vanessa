@@ -8,6 +8,10 @@ const fromString = (str) => {
 }
 
 const toString = async (stream) => {
+    if (stream._readableState && stream._readableState.ended) {
+        console.log('stream ended');
+        return '';
+    }
     return new Promise((resolve) => {
         stream.pipe(collect((buffer) => resolve(buffer.toString())));
     });

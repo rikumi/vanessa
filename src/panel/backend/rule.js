@@ -12,9 +12,10 @@ const getRules = async (ctx) => {
 
 const getRuleByName = async (ctx) => {
     let rule = await getRule(ctx.params.name);
-    if (!rule) {
+    if (rule == null) {
         ctx.throw(404);
     }
+    ctx.status = 200;
     ctx.body = rule;
 };
 
@@ -28,7 +29,7 @@ const selectRule = async (ctx) => {
     }
 
     if (!selectedRules.includes(name)) {
-        if (await getRule(name)) {
+        if (await getRule(name) != null) {
             selectedRules.push(name);
             ctx.session.selectedRules = selectedRules;
         } else {
