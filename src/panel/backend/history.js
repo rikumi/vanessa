@@ -1,5 +1,5 @@
 const { Middleware, Context } = require('koa');
-const isLocalhost = require('is-localhost');
+const isLocalhost = require('../../util/is-localhost');
 const { recentContexts } = require('../../middleware/functional/counter');
 
 const summarize = (ctx) => {

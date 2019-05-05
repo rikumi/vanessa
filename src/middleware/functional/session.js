@@ -5,7 +5,7 @@ const util = require('util');
 const path = require('path');
 const yaml = require('yaml');
 const mkdirp = require('mkdirp');
-const isLocalhost = require('is-localhost');
+const isLocalhost = require('../../util/is-localhost');
 
 let exists = util.promisify(fs.exists);
 let readFile = util.promisify(fs.readFile);

@@ -1,5 +1,5 @@
 const Router = require('koa-router');
-const isLocalhost = require('is-localhost');
+const isLocalhost = require('../../../util/is-localhost');
 const getInfo = require('./info');
 const { addOrModifyRule, addOrModifyRuleOptions, deleteRule } = require('./rule');
 

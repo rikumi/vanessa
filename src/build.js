@@ -17,7 +17,7 @@ if (isProduction) {
     rmrf(cacheDir);
 }
 
-const bundler = new Parcel(entryFile, { outDir, cacheDir });
+const bundler = new Parcel(entryFile, { outDir, cacheDir, hmrHostname: 'vanes.sa' });
 bundler.bundle(); // Then: Exits on 'production' or watches on non-'production'
 
 module.exports = outDir;

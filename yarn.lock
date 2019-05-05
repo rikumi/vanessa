@@ -3164,10 +3164,6 @@ is-installed-globally@^0.1.0:
     global-dirs "^0.1.0"
     is-path-inside "^1.0.0"
 
-is-localhost@^0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/is-localhost/-/is-localhost-0.0.2.tgz#a7b0a62acda7d5bbc9f775128e075ebf5dceef3f"
-
 is-npm@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/is-npm/-/is-npm-1.0.0.tgz#f2fb63a65e4905b406c86072765a1a4dc793b9f4"

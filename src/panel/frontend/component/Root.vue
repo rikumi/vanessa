@@ -1,57 +1,62 @@
 <template>
-    <div class="app-root">
-        <div class="left">
-            <div class="title">Vanessa</div>
-            <div class="section">
-                <div class="section-title">Rules</div>
-                <button class="disable-all" @click="disableAllRules()">Disable All</button>
+    <div class='app-root'>
+        <div class='left'>
+            <div class='title' @click='showInfo'>Vanessa</div>
+            <div class='section'>
+                <div class='section-title'>Rules</div>
+                <button class='disable-all' @click='disableAllRules()'>Disable All</button>
             </div>
-            <div class="rules">
-                <div class="rule" v-for="rule in rules" :key="rule.name" :class="{ selected: rule.isSelected }" @click="toggleRule(rule)">
-                    {{ rule.name }}
+            <div class='rules'>
+                <div class='rule' v-for='rule in rules' :key='rule.name' :class='{ editing: showingRule && rule.name === showingRule.name }' @click='showRule(rule)'>
+                    <div class='rule-select' :class='{ selected: rule.isSelected }' @click.stop='toggleRule(rule)'></div>
+                    <div class='rule-name'>{{ rule.name }}</div>
+                    <div class='rule-remove' @click.stop='removeRule(rule)'></div>
+                </div>
+                <div class='rule-add'>
+                    <input v-model='newRuleName' placeholder='New rule...' @blur='addRule'/>
                 </div>
             </div>
-            <div class="section">
-                <div class="section-title">History</div>
+            <div class='section'>
+                <div class='section-title'>History</div>
             </div>
-            <div class="table-container">
-                <div class="table-scrollable">
-                    <div class="history" v-for="history in histories.slice().reverse()"
+            <div class='table-container'>
+                <div class='table-scrollable'>
+                    <div class='history' v-for='history in histories.slice().reverse()'
                         :key='history.id'
                         :class='{ selected: showingHistory && showingHistory.id === history.id }'
                         @click='showHistoryDetail(history)'>
-                        <div class="row row-1">
-                            <img class="icon" :src="getIcon(history)">
-                            <div class="method">{{ history.method }}</div>
-                            <div class="url">{{ history.url }}</div>
+                        <div class='row row-1'>
+                            <img class='icon' :src='getIcon(history)'>
+                            <div class='method'>{{ history.method }}</div>
+                            <div class='url'>{{ history.url }}</div>
                         </div>
-                        <div class="row row-2">
-                            <div class="id">#{{ history.id }}</div>
-                            <div class="ip">From: {{ history.ip }}</div>
-                            <div class="status">Status: {{ history.status }}</div>
-                            <div class="type">Type: {{ history.type || '[unspecified]' }}</div>
+                        <div class='row row-2'>
+                            <div class='id'>#{{ history.id }}</div>
+                            <div class='ip'>From: {{ history.ip }}</div>
+                            <div class='status'>Status: {{ history.status }}</div>
+                            <div class='type'>Type: {{ history.type || '[unspecified]' }}</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="right" v-show="hasEditor">
-            <div class="editor-title-bar">
-                <div class="editor-title">{{ editorTitle }}</div>
-                <div class="editor-button"
-                    v-if="showingRule"
-                    @click="saveRule"
+        <div class='right' v-show='hasEditor'>
+            <div class='editor-title-bar'>
+                <div class='editor-title'>{{ editorTitle }}</div>
+                <div class='editor-button'
+                    v-if='showingRule'
+                    @click='saveRule'
                 >Save</div>
-                <div class="editor-button"
-                    v-if="showingHistory"
-                    @click="downloadRequest"
+                <div class='editor-button'
+                    v-if='showingHistory'
+                    @click='downloadRequest'
                 >Request body</div>
-                <div class="editor-button"
-                    v-if="showingHistory && showingHistory.response && showingHistory.response.status"
-                    @click="downloadResponse"
+                <div class='editor-button'
+                    v-if='showingHistory && showingHistory.response && showingHistory.response.status'
+                    @click='downloadResponse'
                 >Response body</div>
             </div>
-            <div class="editor" ref="editorContainer"></div>
+            <div class='editor' ref='editorContainer'></div>
         </div>
     </div>
 </template>
@@ -75,10 +80,12 @@ export default {
         rules: [],
         histories: [],
         editor: null,
+        showingInfo: null,
         showingRule: null,
         showingHistory: null,
         editorTitle: '',
         hasEditor: false,
+        newRuleName: '',
     }),
     created() {
         this.reload();
@@ -100,6 +107,7 @@ export default {
             contextmenu: false,
             scrollBeyondLastLine: false
         });
+        this.showInfo();
         window.addEventListener('resize', () => {
             this.editor.layout();
         });
@@ -108,10 +116,20 @@ export default {
         hasEditor() {
             setTimeout(() => this.editor.layout(), 0);
         },
+        showingInfo() {
+            let info = this.showingInfo;
+            console.log('showing info', info);
+            if (info) {
+                this.showingRule = null;
+                this.showingHistory = null;
+                this.setContent('Vanessa Info', info, false);
+            }
+        },
         showingRule() {
             let rule = this.showingRule;
-            console.log('showing rule', rule)
+            console.log('showing rule', rule);
             if (rule) {
+                this.showingInfo = null;
                 this.showingHistory = null;
                 this.setContent(rule.name, rule.content, true);
             }
@@ -119,12 +137,16 @@ export default {
         showingHistory() {
             let history = this.showingHistory;
             if (history) {
+                this.showingInfo = null;
                 this.showingRule = null;
-                this.setContent('history-' + history.id + '.json', JSON.stringify(this.showingHistory, null, 4), false);
+                this.setContent('history-' + history.id + '.json', this.showingHistory, false);
             }
         }
     },
     methods: {
+        async showInfo() {
+            this.showingInfo = (await api.get('/admin/info')).data;
+        },
         async reload() {
             this.rules = (await api.get('/rule')).data;
         },
@@ -151,6 +173,16 @@ export default {
             }
             setTimeout(this.refreshHistory.bind(this), 1000);
         },
+        addRule() {
+            let { newRuleName } = this;
+        },
+        async showRule(rule) {
+            let content = (await api.get('/rule/' + rule.name)).data;
+            this.showingRule = {
+                name: rule.name,
+                content
+            };
+        },
         async toggleRule(rule) {
             if (rule.isSelected) {
                 await api.delete('/rule/' + rule.name);
@@ -159,11 +191,13 @@ export default {
                 await api.post('/rule/' + rule.name);
                 this.reload();
             }
-            let content = (await api.get('/rule/' + rule.name)).data;
-            this.showingRule = {
-                name: rule.name,
-                content
-            };
+        },
+        async removeRule(rule) {
+            await api.delete('/admin/rule/' + rule.name);
+            if (this.showingRule && rule.name === this.showingRule.name) {
+                this.showInfo();
+            }
+            this.reload();
         },
         async disableAllRules() {
             await api.delete('/rule');
@@ -178,6 +212,12 @@ export default {
             });
         },
         setContent(title, content, editable) {
+            if (typeof content !== 'string') {
+                console.log('setContent', title, content, editable);
+                console.log('setContent warning: Stringify content into JSON');
+                content = JSON.stringify(content, null, 4);
+            }
+
             this.hasEditor = true;
             this.editorTitle = title;
             this.editor.getModel().setValue(content);
@@ -273,9 +313,15 @@ input, textarea {
         text-transform: uppercase;
         color: #434144;
         font-size: 12px;
+        font-weight: bold;
         padding: 13px 15px 8px;
         height: 35px;
         box-sizing: border-box;
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
     }
 
     .section {
@@ -314,47 +360,121 @@ input, textarea {
         }
     }
 
-    .rules {
-        padding: 0 5px;
-    }
-
     .rule {
-        color: #7f7c83;
-        font-size: 13px;
-        padding: 6px 29px;
         cursor: pointer;
         display: flex;
         flex-direction: row;
-        position: relative;
-        width: 30%;
-        margin: 1%;
+        align-items: center;
         box-sizing: border-box;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
+        padding: 0 10px;
+
+        &:hover {
+            background: #f3f3f3;
+
+            .rule-select::before {
+                background: #f3f3f3;
+            }
+        }
+
+        &.editing {
+            background: #eeeeee;
+        }
+
+        .rule-select {
+            flex: 0 0 22px;
+            position: relative;
+            pointer-events: all;
+
+            &::before {
+                content: '';
+                position: absolute;
+                left: 5px;
+                top: 50%;
+                margin-top: -7px;
+                width: 14px;
+                height: 14px;
+                border: 1px solid #888;
+                box-sizing: border-box;
+                border-radius: 50%;
+                transition: .2s;
+            }
+
+            &.selected {
+                color: #fd8844;
+
+                &::before {
+                    border: 0;
+                    background-image: url('../assets/checked.svg');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                }
+            }
+        }
+
+        .rule-name {
+            color: #7f7c83;
+            font-size: 13px;
+            flex: 1 1 0;
+            padding: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        &:hover .rule-remove {
+            width: 20px;
+            position: relative;
+
+            &::before {
+                content: '';
+                position: absolute;
+                left: 5px;
+                top: 50%;
+                width: 12px;
+                margin-top: -6px;
+                height: 12px;
+                background-image: url('../assets/remove.svg');
+                background-size: contain;
+                background-repeat: no-repeat;
+                box-sizing: border-box;
+                opacity: .5;
+                transform-origin: center;
+            }
+
+            &:hover::before {
+                opacity: .7;
+                transform: scale(1.1);
+            }
+        }
+    }
+
+    .rule-add {
+        padding: 5px 10px;
+        position: relative;
 
         &::before {
             content: '';
             position: absolute;
-            left: 10px;
+            left: 15px;
             top: 50%;
-            margin-top: -4px;
-            width: 8px;
-            height: 8px;
-            border: 1px solid #666;
+            width: 15px;
+            margin-top: -7.5px;
+            height: 15px;
+            background-image: url('../assets/add.svg');
+            background-size: contain;
+            background-repeat: no-repeat;
             box-sizing: border-box;
-            border-radius: 50%;
+            opacity: .8;
         }
 
-        &.selected {
-            color: #fd8844;
-            background: #eeeeee;
-
-            &::before {
-                border: 0;
-                background: #fd8844;
-            }
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 3px 10px 3px 27px;
+            font-size: 13px;
+            background: #fafafa;
+            border: 1px solid #eeeeee;
         }
     }
 

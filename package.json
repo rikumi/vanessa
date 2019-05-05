@@ -30,7 +30,7 @@
     "http-proxy-agent": "^2.1.0",
     "https-detect": "^0.0.0",
     "https-proxy-agent": "^2.2.1",
-    "is-localhost": "^0.0.2",
+    "ip": "^1.1.5",
     "is-root": "^2.1.0",
     "koa": "^2.7.0",
     "koa-router": "^7.4.0",
