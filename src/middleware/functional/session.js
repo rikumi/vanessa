@@ -7,10 +7,6 @@ const yaml = require('yaml');
 const mkdirp = require('mkdirp');
 const isLocalhost = require('../../util/is-localhost');
 
-let exists = util.promisify(fs.exists);
-let readFile = util.promisify(fs.readFile);
-let writeFile = util.promisify(fs.writeFile);
-
 const sessionDir = path.join(os.homedir(), '.vanessa', 'sessions');
 mkdirp.sync(sessionDir);
 
@@ -26,10 +22,13 @@ const sessionMiddleware = async (ctx, next) => {
 
     ctx.session = {};
 
-    if (await exists(filePath)) {
+    if (fs.existsSync(filePath)) {
         try {
-            let content = (await readFile(filePath)).toString();
+            let content = (fs.readFileSync(filePath)).toString();
             ctx.session = yaml.parse(content);
+            if (!ctx.session) {
+                console.log('session error', content);
+            }
         } catch (e) {}
     }
 
@@ -47,7 +46,7 @@ const sessionMiddleware = async (ctx, next) => {
         ctx.session.expires = Date.now() + 60 * 60 * 1000;
     }
 
-    writeFile(filePath, yaml.stringify(ctx.session));
+    fs.writeFileSync(filePath, yaml.stringify(ctx.session));
 };
 
 module.exports = sessionMiddleware;

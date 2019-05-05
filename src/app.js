@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
 const { argv } = require('yargs');
+const stringify = require('./util/safe-json');
 
 const Vanessa = require('./index');
 

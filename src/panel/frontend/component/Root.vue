@@ -44,9 +44,9 @@
             <div class='editor-title-bar'>
                 <div class='editor-title'>{{ editorTitle }}</div>
                 <div class='editor-button'
-                    v-if='showingRule'
-                    @click='saveRule'
-                >Save</div>
+                    v-if='editorIsDirty'
+                    @click='editorSave'
+                >Save (⌘S)</div>
                 <div class='editor-button'
                     v-if='showingHistory'
                     @click='downloadRequest'
@@ -57,6 +57,21 @@
                 >Response body</div>
             </div>
             <div class='editor' ref='editorContainer'></div>
+            <div class='logs' v-if='showingRule'>
+                <div class='logs-title'>Logs from {{ showingRule.name }}</div>
+                <div class='logs-container'>
+                    <div class='logs-scroller' v-if='showingRule.logs && showingRule.logs.length'>
+                        <div class='logs-wrapper' ref='logWrapper'>
+                            <div class='log' v-for='log in showingRule.logs' :key='log.id' :class='"type-" + log.type'>
+                                <div class='log-ctxid' @click='showHistoryDetail({ id: log.ctxId })'>[#{{ log.ctxId }}]</div>
+                                <div class='log-content'>{{ prettifyLog(log) }}</div>
+                            </div>
+                            <div class='log bottom'></div>
+                        </div>
+                    </div>
+                    <div class='logs-empty' v-else>Use <code>console.log</code>/<code>console.error</code> to print logs here.</div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -75,6 +90,8 @@ import iconLoading from '../assets/loading.svg';
 
 monaco.editor.defineTheme('ayu-light', theme);
 
+const monospaceFonts = '"Fira Code", "Monaco", "Source Code Pro", monospace'
+
 export default {
     data: () => ({
         rules: [],
@@ -86,10 +103,12 @@ export default {
         editorTitle: '',
         hasEditor: false,
         newRuleName: '',
+        editorIsDirty: false,
     }),
     created() {
         this.reload();
-        this.refreshHistory();
+        setInterval(() => this.refreshHistory(), 1000);
+        setInterval(() => this.refreshLogs(), 1000);
     },
     mounted() {
         this.editor = monaco.editor.create(this.$refs.editorContainer, {
@@ -97,7 +116,7 @@ export default {
                 enabled: false
             },
             language: 'javascript',
-            fontFamily: '"Fira Code", "Monaco", "Source Code Pro", monospace',
+            fontFamily: monospaceFonts,
             fontLigatures: true,
             fontSize: 13,
             readOnly: true,
@@ -107,6 +126,9 @@ export default {
             contextmenu: false,
             scrollBeyondLastLine: false
         });
+        this.editor.getModel().onDidChangeContent(() => {
+            this.editorIsDirty = true;
+        })
         this.editor.addAction({
             id: 'vanessa-save-rule',
             label: 'Save Rule',
@@ -114,10 +136,7 @@ export default {
                 monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S,
             ],
             run: (editor) => {
-                if (this.showingRule) {
-                    this.saveRule();
-                }
-                return null;
+                this.editorSave();
             }
         });
         this.showInfo();
@@ -132,10 +151,12 @@ export default {
         showingInfo() {
             let info = this.showingInfo;
             console.log('showing info', info);
-            if (info) {
+            if (info && this.editorLeaveConfirm()) {
                 this.showingRule = null;
                 this.showingHistory = null;
-                this.setContent('Vanessa Info', info, false);
+                this.editorSetContent('Vanessa Info', info, false);
+            } else {
+                this.showingInfo = null;
             }
         },
         showingRule() {
@@ -144,15 +165,17 @@ export default {
             if (rule) {
                 this.showingInfo = null;
                 this.showingHistory = null;
-                this.setContent(rule.name, rule.content, true);
+                this.editorSetContent(rule.name, rule.content, true);
             }
         },
         showingHistory() {
             let history = this.showingHistory;
-            if (history) {
+            if (history && this.editorLeaveConfirm()) {
                 this.showingInfo = null;
                 this.showingRule = null;
-                this.setContent('history-' + history.id + '.json', this.showingHistory, false);
+                this.editorSetContent('history-' + history.id + '.json', this.showingHistory, false);
+            } else {
+                this.showingHistory = null;
             }
         }
     },
@@ -184,7 +207,6 @@ export default {
                     this.showHistoryDetail(this.showingHistory);
                 }
             }
-            setTimeout(this.refreshHistory.bind(this), 1000);
         },
         async addRule() {
             let name = this.newRuleName;
@@ -235,16 +257,41 @@ export default {
         },
         async saveRule() {
             this.showingRule.content = this.editor.getModel().getValue();
-            await api.post('/admin/rule/' + this.showingRule.name, this.showingRule.content, {
-                headers: {
-                    'content-type': 'text/plain'
-                }
-            });
+            await api.post('/admin/rule/' + this.showingRule.name, this.showingRule.content);
         },
-        setContent(title, content, editable) {
+        async refreshLogs() {
+            let { showingRule } = this;
+            if (showingRule) {
+                showingRule.logs = showingRule.logs || [];
+                let fetchFromId = showingRule.logs.length && showingRule.logs.slice(-1)[0].id + 1;
+                let wrapper = this.$refs.logWrapper;
+                let scroller = wrapper && wrapper.parentElement;
+                let isAtBottom = !wrapper ||
+                    !scroller.scrollTop ||
+                    scroller.scrollTop + scroller.clientHeight + 10 >= wrapper.clientHeight;
+
+                let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
+
+                if (this.showingRule == showingRule) {
+                    showingRule.logs = showingRule.logs.concat(next);
+                    this.showingRule = showingRule;
+                }
+                if (isAtBottom) {
+                    setTimeout(() => {
+                        let wrapper = this.$refs.logWrapper;
+                        let scroller = wrapper && wrapper.parentElement;
+                        scroller.scrollTo({
+                            top: wrapper.clientHeight - scroller.clientHeight,
+                            left: 0
+                        });
+                    }, 0);
+                }
+            }
+        },
+        editorSetContent(title, content, editable) {
             if (typeof content !== 'string') {
-                console.log('setContent', title, content, editable);
-                console.log('setContent warning: Stringify content into JSON');
+                console.log('editorSetContent', title, content, editable);
+                console.log('editorSetContent warning: Stringify content into JSON');
                 content = JSON.stringify(content, null, 4);
             }
 
@@ -253,6 +300,16 @@ export default {
             this.editor.getModel().setValue(content);
             this.editor.updateOptions({ readOnly: !editable });
             this.editor.setScrollPosition({ scrollTop: 0 });
+            this.editorIsDirty = false;
+        },
+        editorLeaveConfirm() {
+            return !this.editorIsDirty || confirm(`Do you mean to leave without saving changes?`);
+        },
+        async editorSave() {
+            if (this.showingRule) {
+                await this.saveRule();
+            }
+            this.editorIsDirty = false;
         },
         async showHistoryDetail(history) {
             this.showingHistory = (await api.get('/history/' + history.id)).data;
@@ -289,6 +346,9 @@ export default {
             }
 
             return 'data:image/svg+xml;utf8,<svg></svg>';
+        },
+        prettifyLog(log) {
+            return log.content.map(k => typeof k === 'string' ? k : JSON.stringify(k)).join(' ');
         }
     }
 }
@@ -650,6 +710,104 @@ input, textarea {
 
     .editor {
         flex: 1 1 0;
+        overflow: hidden;
+    }
+
+    .logs {
+        border-top: 1px solid #eeeeee;
+        height: 30%;
+        display: flex;
+        flex-direction: column;
+
+        .logs-title {
+            flex: 0 0 auto;
+            // text-transform: uppercase;
+            color: #434144;
+            font-size: 12px;
+            padding: 10px 15px;
+        }
+
+        .logs-container {
+            flex: 1 1 0;
+            padding: 5px 15px 15px;
+            min-height: 0;
+
+            .logs-scroller {
+                width: 100%;
+                height: 100%;
+                overflow-x: hidden;
+                overflow-y: scroll;
+
+                .logs-wrapper {
+                    font-family: "Fira Code", "Monaco", "Source Code Pro", monospace;
+
+                    .log {
+                        white-space: pre-wrap;
+                        word-break: break-all;
+                        word-wrap: break-word;
+                        width: 100%;
+                        line-height: 17px;
+                        padding: 0 5px;
+
+                        .log-ctxid {
+                            display: inline-block;
+                            color: #55b4d4;
+                            cursor: pointer;
+
+                            &:hover {
+                                text-decoration: underline;
+                            }
+                        }
+
+                        .log-content {
+                            display: inline;
+                        }
+
+                        &.type-error,
+                        &.type-trace {
+                            padding-top: 5px;
+                            padding-bottom: 5px;
+                            margin-top: 5px;
+                            margin-bottom: 5px;
+                            border-top: 1px solid #fcc;
+                            border-bottom: 1px solid #fcc;
+                            background: rgba(255, 0, 0, .05);
+
+                            .log-ctxid,
+                            .log-content {
+                                color: #c33f3f;
+                            }
+                        }
+
+                        &.bottom {
+                            width: 2px;
+                            height: 15px;
+                            padding: 0;
+                            background: #6c7680;
+                            animation: blink 1s linear infinite;
+
+                            @keyframes blink {
+                                0%, 50% {
+                                    opacity: 1;
+                                }
+                                1%, 49% {
+                                    opacity: 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            .logs-empty {
+                code {
+                    font-family: "Fira Code", "Monaco", "Source Code Pro", monospace;
+                    margin: 0 5px;
+                    padding: 2px 3px;
+                    background: #f7f7f7;
+                }
+            }
+        }
     }
 }
 </style>
