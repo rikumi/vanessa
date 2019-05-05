@@ -313,7 +313,6 @@ input, textarea {
         text-transform: uppercase;
         color: #434144;
         font-size: 12px;
-        font-weight: bold;
         padding: 13px 15px 8px;
         height: 35px;
         box-sizing: border-box;
@@ -471,10 +470,10 @@ input, textarea {
         input {
             width: 100%;
             box-sizing: border-box;
-            padding: 3px 10px 3px 27px;
+            padding: 3px 10px 3px 28px;
             font-size: 13px;
             background: #fafafa;
-            border: 1px solid #eeeeee;
+            border: none;
         }
     }
 
