@@ -4,6 +4,7 @@ const compose = require('koa-compose');
 
 const { getRule } = require('../../util/rule');
 const { log } = require('../../util/console');
+const createSandbox = require('../../sandbox');
 
 const ruleMiddleware = async (ctx, next) => {
     let selectedRules = ctx.session.selectedRules || [];
@@ -19,7 +20,7 @@ const ruleMiddleware = async (ctx, next) => {
     for (let script of scripts) {
         let sandbox = new NodeVM({
             console: 'redirect',
-            sandbox: {}
+            sandbox: createSandbox(ctx, script.name)
         });
         
         sandbox.on('console.log', log.bind(null, ctx, script.name, 'log'));
@@ -32,7 +33,11 @@ const ruleMiddleware = async (ctx, next) => {
 
         try {
             let mw = sandbox.run(script.content);
-            if (mw) {
+            if (Array.isArray(mw)) {
+                for (let submw of mw) {
+                    middleware.push(mw);
+                }
+            } else if (mw) {
                 middleware.push(mw);
             }
         } catch (e) {

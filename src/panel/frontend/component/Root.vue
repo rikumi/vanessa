@@ -57,18 +57,21 @@
                 >Response body</div>
             </div>
             <div class='editor' ref='editorContainer'></div>
-            <div class='logs' v-if='showingRule'>
-                <div class='logs-title'>Logs from {{ showingRule.name }}</div>
+            <div class='logs' v-if='showingRule || showingHistory'>
+                <div class='logs-title'>Logs from {{ showingRule ? showingRule.name : '#' + showingHistory.id }}</div>
                 <div class='logs-container'>
-                    <div class='logs-scroller' v-if='showingRule.logs && showingRule.logs.length'>
+                    <div class='logs-scroller' v-if='showingRule ? showingRule.logs && showingRule.logs.length : showingHistory.logs && showingHistory.logs.length'>
                         <div class='logs-wrapper' ref='logWrapper'>
-                            <div class='log' v-for='log in showingRule.logs' :key='log.id' :class='"type-" + log.type'>
-                                <div class='log-ctxid' @click='showHistoryDetail({ id: log.ctxId })'>[#{{ log.ctxId }}]</div>
+                            <div class='log' v-for='log in (showingRule ? showingRule.logs : showingHistory.logs)' :key='log.id' :class='"type-" + log.type'>
+                                <div class='log-ctxid' v-if='showingRule' @click='showHistoryDetail({ id: log.ctxId })'>[#{{ log.ctxId }}]</div>
+                                <div class='log-ctxid' v-else-if='log.rule' @click='showRule({ name: log.rule })'>[{{ log.rule }}]</div>
+                                <div class='log-ctxid' v-else>(global)</div>
                                 <div class='log-content'>{{ prettifyLog(log) }}</div>
                             </div>
                             <div class='log bottom'></div>
                         </div>
                     </div>
+                    <div class='logs-empty' v-else-if='showingHistory'>Use <code>console.log</code>/<code>console.error</code> in rules to print logs here.</div>
                     <div class='logs-empty' v-else-if='showingRule.logs'>Use <code>console.log</code>/<code>console.error</code> to print logs here.</div>
                     <div class='logs-loading' v-else>Retrieving logs…</div>
                 </div>
@@ -174,7 +177,10 @@ export default {
             if (history && this.editorLeaveConfirm()) {
                 this.showingInfo = null;
                 this.showingRule = null;
-                this.editorSetContent('history-' + history.id + '.json', this.showingHistory, false);
+                this.editorSetContent('#' + history.id, {
+                    ...this.showingHistory,
+                    logs: undefined
+                }, false);
             } else {
                 this.showingHistory = null;
             }
@@ -268,7 +274,6 @@ export default {
                 let wrapper = this.$refs.logWrapper;
                 let scroller = wrapper && wrapper.parentElement;
                 let isAtBottom = !wrapper ||
-                    !scroller.scrollTop ||
                     scroller.scrollTop + scroller.clientHeight + 10 >= wrapper.clientHeight;
 
                 let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
@@ -303,6 +308,7 @@ export default {
             this.editor.updateOptions({ readOnly: !editable });
             this.editor.setScrollPosition({ scrollTop: 0 });
             this.editorIsDirty = false;
+            setTimeout(() => this.editor.layout(), 0);
         },
         editorLeaveConfirm() {
             return !this.editorIsDirty || confirm(`Do you mean to leave without saving changes?`);
@@ -350,7 +356,12 @@ export default {
             return 'data:image/svg+xml;utf8,<svg></svg>';
         },
         prettifyLog(log) {
-            return log.content.map(k => typeof k === 'string' ? k : JSON.stringify(k)).join(' ');
+            if (Array.isArray(log.content)) {
+                return log.content.map(k => typeof k === 'string' ? k : JSON.stringify(k)).join(' ');
+            } else if (typeof log.content !== 'string') {
+                return JSON.stringify(log.content);
+            }
+            return log.content;
         }
     }
 }
