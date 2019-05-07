@@ -1,12 +1,14 @@
-const { Readable } = require('stream');
+const { Stream, Readable } = require('stream');
 const streamReplace = require('replacestream');
-const streamCollect = require('collect-all');
+const streamCollect = require('raw-body');
 const streamThrottle = require('brake');
 const streamDelay = require('delay-stream');
 const intoStream = require('into-stream');
 const toDuplex = require('duplexify');
-const PassthroughDuplex = require('minipass');
 const { NullWritable } = require('null-writable');
+const MiniPass = require('minipass');
+
+const streamProto = Object.create(Stream.prototype);
 
 const toStream = (data) => {
     if (data instanceof Readable) {
@@ -22,16 +24,6 @@ const toStream = (data) => {
     }
     return intoStream(data);
 }
-
-const toString = async (stream) => {
-    if (stream.finished) {
-        console.log('stream ended');
-        return '';
-    }
-    return new Promise((resolve) => {
-        stream.pipe(streamCollect((buffer) => resolve(buffer.toString())));
-    });
-};
 
 const steal = async (stream) => {
     if (stream.readable) {
@@ -62,44 +54,60 @@ const steal = async (stream) => {
     }
 }
 
-const overwriteStream = (pipeFunc, data) => {
-    pipeFunc(toDuplex(new NullWritable(), toStream(data)));
+const overwriteStream = (pipeThrough, data) => {
+    pipeThrough(toDuplex(new NullWritable(), toStream(data)));
 }
 
-const getStreamOperations = (pipeFunc) => {
+const getStreamOperations = (ctx, type) => {
+    // response.body is not available right now, and should be read later when the response comes.
+    let requestOrResponse = ctx[type];
+
+    let pipeThrough = (dup) => requestOrResponse.body = (requestOrResponse.body.pipe(dup));
+    let ensurePhase = (operation = 'write') => {
+        if (ctx.phase === 'request' && type === 'response') {
+            throw new Error('Cannot access response body during request phase.');
+        } else if (ctx.phase === 'response' && type === 'request' && operation === 'write') {
+            throw new Error('Cannot modify request body during response phase.');
+        }
+    };
+
     let operations = {
-        // TODO: Not working yet
         async all() {
-            return new Promise((resolve) => pipeFunc(streamCollect(resolve)));
-        },
-        overwrite(data) {
-            overwriteStream(pipeFunc, data);
-            return operations;
+            ensurePhase('read');
+            return await streamCollect(requestOrResponse.body);
         },
         // TODO: Not tested yet
         transform(transform) {
-            pipeFunc(transform);
+            ensurePhase('write');
+            pipeThrough(transform);
             return operations;
         },
         replace(find, replace) {
+            ensurePhase('write');
             // RegExp literals in sandboxes are not `instanceof` RegExp.
             if (find.constructor.name === 'RegExp') {
                 find = new RegExp(find, find.flags);
             }
-            pipeFunc(streamReplace(find, replace));
+            pipeThrough(streamReplace(find, replace));
             return operations;
         },
-        // TODO: Not working yet
         prepend(data) {
-            let dup = new PassthroughDuplex();
+            ensurePhase('write');
+            let dup = new MiniPass();
+            // Modify the MiniPass prototype to extend Stream.prototype
+            // so as to not be treated by koa as JSON response.
+            dup.__proto__.__proto__ = streamProto;
             dup.write(data);
-            pipeFunc(dup);
+            pipeThrough(dup);
             return operations;
         },
-        // TODO: Not working yet
         append(data) {
-            let dup = new PassthroughDuplex();
-            pipeFunc(dup);
+            ensurePhase('write');
+            let dup = new MiniPass();
+            // Modify the MiniPass prototype to extend Stream.prototype
+            // so as to not be treated by koa as JSON response.
+            dup.__proto__.__proto__ = streamProto;
+            pipeThrough(dup);
             let end = dup.end.bind(dup);
             dup.end = (chunk, encoding, cb) => {
                 dup.write(chunk, encoding);
@@ -109,11 +117,13 @@ const getStreamOperations = (pipeFunc) => {
             return operations;
         },
         delay(ms) {
-            pipeFunc(streamDelay(ms));
+            ensurePhase('write');
+            pipeThrough(streamDelay(ms));
             return operations;
         },
         throttle(bytesPerSecond) {
-            pipeFunc(streamThrottle(bytesPerSecond));
+            ensurePhase('write');
+            pipeThrough(streamThrottle(bytesPerSecond));
             return operations;
         }
     };
@@ -122,7 +132,6 @@ const getStreamOperations = (pipeFunc) => {
 
 module.exports = {
     toStream,
-    toString,
     steal,
     overwriteStream,
     getStreamOperations,

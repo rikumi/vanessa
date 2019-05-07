@@ -1,10 +1,7 @@
-const { Middleware } = require('koa');
 const { inspect } = require('util');
 const chalk = require('chalk');
 
 const clientEndMiddleware = async (ctx, next) => {
-    ctx.req.pause();
-
     for (let h in ctx.request.header) {
         if (/^proxy\-/i.test(h)) {
             delete ctx.request.header[h];
@@ -55,21 +52,12 @@ const clientEndMiddleware = async (ctx, next) => {
         }
     });
     
+    ctx.phase = 'request';
     ctx.summary = {};
-    ctx.log = (key, value) => {
-        let message = chalk.bgCyan.black(`[${ key }]`) +
-            ` ${ inspect(value, false, 0, true).replace(/\s*\n\s*/g, ' ') }`;
-        console.log(message);
-    }
     ctx.requestOptions = {};
-    ctx.requestFilters = [];
-    ctx.responseFilters = [];
+    ctx.request.body = ctx.req;
 
     await next();
-
-    for (let filter of ctx.responseFilters) {
-        ctx.response.body = ctx.response.body.pipe(filter);
-    }
 }
 
 module.exports = clientEndMiddleware;

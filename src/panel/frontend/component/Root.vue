@@ -66,7 +66,7 @@
                                 <div class='log-ctxid' v-if='showingRule' @click='showHistoryDetail({ id: log.ctxId })'>[#{{ log.ctxId }}]</div>
                                 <div class='log-ctxid' v-else-if='log.rule' @click='showRule({ name: log.rule })'>[{{ log.rule }}]</div>
                                 <div class='log-ctxid' v-else>(global)</div>
-                                <div class='log-content'>{{ prettifyLog(log) }}</div>
+                                <div class='log-content'>{{ log.content }}</div>
                             </div>
                             <div class='log bottom'></div>
                         </div>
@@ -305,7 +305,7 @@ export default {
                                         endLineNumber: row,
                                         startColumn: col,
                                         endColumn: 1000,
-                                        message: this.prettifyLog(e).split(/\n\s{4}at\s/)[0]
+                                        message: e.content.split(/\n\s{4}at\s/)[0]
                                     });
                                 }
                             }
@@ -388,14 +388,6 @@ export default {
             }
 
             return 'data:image/svg+xml;utf8,<svg></svg>';
-        },
-        prettifyLog(log) {
-            if (Array.isArray(log.content)) {
-                return log.content.map(k => typeof k === 'string' ? k : JSON.stringify(k)).join(' ');
-            } else if (typeof log.content !== 'string') {
-                return JSON.stringify(log.content);
-            }
-            return log.content;
         }
     }
 }

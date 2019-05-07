@@ -18,18 +18,14 @@ const serverEndMiddleware = async (ctx) => {
             let req = proto.request(options, resolve);
             req.on('error', reject);
 
-            let clientReq = ctx.req;
-            for (let filter of ctx.requestFilters) {
-                ctx.req = ctx.req.pipe(filter);
-            }
-            ctx.req.pipe(req);
-            clientReq.resume();
+            ctx.request.body.pipe(req);
         });
     } catch (e) {
         ctx.throw(502, e);
     }
 
     res.pause();
+    ctx.phase = 'response';
     ctx.response.status = res.statusCode;
     ctx.response.message = res.statusMessage;
     
@@ -45,7 +41,7 @@ const serverEndMiddleware = async (ctx) => {
     res.headers['connection'] = 'close';
     delete res.headers['content-length'];
     ctx.response.set(res.headers);
-    ctx.response['_body'] = res;
+    ctx.response._body = res;
 };
 
 module.exports = serverEndMiddleware;

@@ -1,6 +1,6 @@
+const toString = require('raw-body');
 const { Middleware } = require('koa');
 const { setRule, removeRule, getRule } = require('../../../util/rule');
-const { toString } = require('../../../util/stream');
 const { logsByRuleName } = require('../../../util/console');
 
 const addOrModifyRule = async (ctx) => {

@@ -8,7 +8,7 @@ const gunzipMiddleware = async (ctx, next) => {
     if (encoding && encoding.toLowerCase() == 'gzip') {
         ctx.summary.gzip = { enabled: true };
         ctx.response.set('content-encoding', null);
-        ctx.responseFilters.push(createGunzip());
+        ctx.response._body = ctx.response.body.pipe(createGunzip());
     }
 };
 

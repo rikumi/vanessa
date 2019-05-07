@@ -1,7 +1,13 @@
 const p2re = require('path-to-regexp');
 const { getStreamOperations } = require('../../util/stream');
+const AgingQueue = require('../../util/aging');
+const recentContexts = new AgingQueue(1024);
 
 module.exports = async (ctx, next) => {
+
+    // Keep track of third party requests only (apart from panel requests)
+    recentContexts.push(ctx);
+    
     ctx.test = (pattern) => {
         if (pattern.constructor.name === 'RegExp') {
             return pattern.exec(ctx.url);
@@ -32,7 +38,9 @@ module.exports = async (ctx, next) => {
         throw new Error('Pattern must be RegExp or String.');
     }
 
-    Object.assign(ctx.req, getStreamOperations([].push.bind(ctx.requestFilters)));
-    Object.assign(ctx.res, getStreamOperations([].push.bind(ctx.responseFilters)));
+    Object.assign(ctx.request, getStreamOperations(ctx, 'request'));
+    Object.assign(ctx.response, getStreamOperations(ctx, 'response'));
     await next();
 }
+
+module.exports.recentContexts = recentContexts;

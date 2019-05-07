@@ -1,7 +1,13 @@
+const util = require('util');
 const AgingQueue = require('./aging');
 const logsByRuleName = {};
 
 const log = (ctx, rule, type, ...content) => {
+    if (content.length > 1 || typeof content[0] !== 'string') {
+        content = content.map((k) => util.inspect(k));
+    }
+    content = content.join(' ');
+
     ctx.summary.logs = ctx.summary.logs || [];
     ctx.summary.logs.push({ rule, type, content });
 

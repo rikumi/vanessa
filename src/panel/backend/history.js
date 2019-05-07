@@ -1,6 +1,6 @@
 const { Middleware, Context } = require('koa');
 const isLocalhost = require('../../util/is-localhost');
-const { recentContexts } = require('../../middleware/functional/counter');
+const { recentContexts } = require('../../middleware/functional/context');
 
 const summarize = (ctx) => {
     let { id, method, url, ip, status, res, response: { type }} = ctx;
@@ -85,7 +85,7 @@ const getResponseBody = (ctx) => {
             ctx.set('content-encoding', detail.response.headers['content-encoding']);
             ctx.set('content-disposion', detail.response.headers['content-disposion']);
             ctx.body = body;
-        }s
+        }
     }
 };
 
