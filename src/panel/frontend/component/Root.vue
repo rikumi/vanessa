@@ -108,6 +108,7 @@ export default {
         hasEditor: false,
         newRuleName: '',
         editorIsDirty: false,
+        markers: [],
     }),
     created() {
         this.reload();
@@ -184,6 +185,9 @@ export default {
             } else {
                 this.showingHistory = null;
             }
+        },
+        markers() {
+            monaco.editor.setModelMarkers(this.editor.getModel(), 'vanessa-rule-logs', this.markers);
         }
     },
     methods: {
@@ -265,6 +269,7 @@ export default {
         async saveRule() {
             this.showingRule.content = this.editor.getModel().getValue();
             await api.post('/admin/rule/' + this.showingRule.name, this.showingRule.content);
+            this.markers = [];
         },
         async refreshLogs() {
             let { showingRule } = this;
@@ -277,6 +282,29 @@ export default {
                     scroller.scrollTop + scroller.clientHeight + 10 >= wrapper.clientHeight;
 
                 let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
+                let errors = next.filter(k => k.type === 'error' || k.type === 'trace');
+
+                errors.forEach((e) => {
+                    let match = /vm\.js:(\d+)(:(\d+))?/.exec(e.content);
+                    if (match) {
+                        let [, row,, col = 0] = match.map(Number);
+                        if (!col) {
+                            match = /\n(\s*)\^\s*\n/.exec(e.content);
+                            if (match) {
+                                col = match[1].length + 1;
+                            }
+                        }
+                        if (!this.markers.find(k => k.startLineNumber === row && k.startColumn === col)) {
+                            this.markers = this.markers.concat({
+                                startLineNumber: row,
+                                endLineNumber: row,
+                                startColumn: col,
+                                endColumn: 1000,
+                                message: this.prettifyLog(e).split(/\n\s{4}at\s/)[0]
+                            });
+                        }
+                    }
+                })
 
                 if (this.showingRule == showingRule) {
                     logs = logs.concat(next);
@@ -287,8 +315,8 @@ export default {
                     setTimeout(() => {
                         let wrapper = this.$refs.logWrapper;
                         let scroller = wrapper && wrapper.parentElement;
-                        scroller.scrollTo({
-                            top: wrapper.clientHeight - scroller.clientHeight,
+                        scroller && scroller.scrollTo({
+                            top: wrapper.clientHeight - scroller.clientHeight + 10,
                             left: 0
                         });
                     }, 0);
@@ -309,15 +337,16 @@ export default {
             this.editor.setScrollPosition({ scrollTop: 0 });
             this.editorIsDirty = false;
             setTimeout(() => this.editor.layout(), 0);
+            this.markers = [];
         },
         editorLeaveConfirm() {
             return !this.editorIsDirty || confirm(`Do you mean to leave without saving changes?`);
         },
         async editorSave() {
-            if (this.showingRule) {
+            if (this.showingRule && this.editorIsDirty) {
                 await this.saveRule();
+                this.editorIsDirty = false;
             }
-            this.editorIsDirty = false;
         },
         async showHistoryDetail(history) {
             this.showingHistory = (await api.get('/history/' + history.id)).data;

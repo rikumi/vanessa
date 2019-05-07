@@ -20,27 +20,43 @@ const ruleMiddleware = async (ctx, next) => {
     for (let script of scripts) {
         let sandbox = new NodeVM({
             console: 'redirect',
-            sandbox: createSandbox(ctx, script.name)
+            sandbox: createSandbox(ctx, script.name),
+            require: {
+                external: true,
+                builtin: ['*'],
+                context: 'sandbox'
+            }
         });
-        
-        sandbox.on('console.log', log.bind(null, ctx, script.name, 'log'));
-        sandbox.on('console.error', log.bind(null, ctx, script.name, 'error'));
 
         const trace = (e) => {
             log(ctx, script.name, 'trace', e.stack);
         }
-        sandbox.on('console.trace', trace);
+
+        const asyncTryCatch = (fun) => {
+            // Catch errors during middleware execution
+            return async (...args) => {
+                try {
+                    return await fun(...args);
+                } catch (e) {
+                    trace(e);
+                }
+            }
+        }
 
         try {
+            sandbox.on('console.log', log.bind(null, ctx, script.name, 'log'));
+            sandbox.on('console.error', log.bind(null, ctx, script.name, 'error'));
+            sandbox.on('console.trace', trace);
             let mw = sandbox.run(script.content);
             if (Array.isArray(mw)) {
                 for (let submw of mw) {
-                    middleware.push(mw);
+                    middleware.push(asyncTryCatch(mw));
                 }
             } else if (mw) {
-                middleware.push(mw);
+                middleware.push(asyncTryCatch(mw));
             }
         } catch (e) {
+            // Catch errors during module evaluation
             trace(e);
         }
     }
