@@ -284,7 +284,7 @@ export default {
                 let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
 
                 // Add markers in rule editor when new error logs were fetched, except for the first fetch.
-                if (this.showingRule.logs.length) {
+                if (logs && logs.length) {
                     let errors = next.filter(k => k.type === 'error' || k.type === 'trace');
 
                     errors.forEach((e) => {
