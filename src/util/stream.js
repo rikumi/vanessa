@@ -8,7 +8,18 @@ const toDuplex = require('duplexify');
 const { NullWritable } = require('null-writable');
 const MiniPass = require('minipass');
 
-const streamProto = Object.create(Stream.prototype);
+// Force the MiniPass prototype to extend Stream.prototype
+// so as to not be treated by koa as JSON response.
+class MiniPassStream extends MiniPass {
+    constructor(options) {
+        super(options);
+
+        this.__proto__ // MiniPassStream.prototype
+            .__proto__ // MiniPass.prototype
+            .__proto__ // was EventEmitter.prototype
+            = Object.create(Stream.prototype);
+    }
+}
 
 const toStream = (data) => {
     if (data instanceof Readable) {
@@ -93,20 +104,14 @@ const getStreamOperations = (ctx, type) => {
         },
         prepend(data) {
             ensurePhase('write');
-            let dup = new MiniPass();
-            // Modify the MiniPass prototype to extend Stream.prototype
-            // so as to not be treated by koa as JSON response.
-            dup.__proto__.__proto__ = streamProto;
+            let dup = new MiniPassStream();
             dup.write(data);
             pipeThrough(dup);
             return operations;
         },
         append(data) {
             ensurePhase('write');
-            let dup = new MiniPass();
-            // Modify the MiniPass prototype to extend Stream.prototype
-            // so as to not be treated by koa as JSON response.
-            dup.__proto__.__proto__ = streamProto;
+            let dup = new MiniPassStream();
             pipeThrough(dup);
             let end = dup.end.bind(dup);
             dup.end = (chunk, encoding, cb) => {
