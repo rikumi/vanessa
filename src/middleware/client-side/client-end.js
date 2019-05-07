@@ -11,13 +11,12 @@ const clientEndMiddleware = async (ctx, next) => {
         }
     }
 
+    let _host = ctx.request.host;
+
     Object.defineProperties(ctx.request, {
         url: {
             get() {
-                return ctx.request.protocol + '://' +
-                    ctx.request.header.host +
-                    ctx.request.path + 
-                    ctx.request.search
+                return ctx.request.protocol + '://' + ctx.request.header.host + ctx.request.path + ctx.request.search;
             },
             set(url) {
                 let { protocol, host, pathname, search } = new URL(url);
@@ -32,8 +31,27 @@ const clientEndMiddleware = async (ctx, next) => {
             writable: true
         },
         host: {
-            value: ctx.request.header.host,
-            writable: true
+            get() {
+                return _host;
+            },
+            set(host) {
+                _host = host;
+                let ipPort = /^[\d\.]+(:(\d+))?$/.exec(host);
+                if (ipPort && parseInt(ipPort[2]) !== 443) {
+                    ctx.request.protocol = 'http';
+                }
+            }
+        }
+    });
+
+    Object.defineProperties(ctx, {
+        host: {
+            get() {
+                return ctx.request.host;
+            },
+            set(host) {
+                ctx.request.host = host;
+            }
         }
     });
     

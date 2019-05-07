@@ -44,7 +44,13 @@ const getSystemProxy = () => {
 }
 
 const clientProxyMiddleware = async (ctx, next) => {
-    ctx.proxy = getSystemProxy();
+    ctx.request.proxy = getSystemProxy();
+
+    Object.defineProperty(ctx, 'proxy', {
+        get: () => ctx.request.proxy,
+        set: (proxy) => ctx.request.proxy = proxy
+    })
+    
     await next();
 };
 

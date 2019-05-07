@@ -1,4 +1,5 @@
 const p2re = require('path-to-regexp');
+const { getStreamOperations } = require('../../util/stream');
 
 module.exports = async (ctx, next) => {
     ctx.test = (pattern) => {
@@ -25,13 +26,13 @@ module.exports = async (ctx, next) => {
             pattern = p2re(pattern, keys);
             result = pattern.exec(url);
 
-            return result && keys
-                .map((k, i) => ({ [k.name]: result[i + 1] }))
-                .reduce((a, b) => Object.assign(a, b), {});
+            return result && Object.assign(...keys.map((k, i) => ({ [k.name]: result[i + 1] })));
         }
 
         throw new Error('Pattern must be RegExp or String.');
     }
 
+    Object.assign(ctx.req, getStreamOperations([].push.bind(ctx.requestFilters)));
+    Object.assign(ctx.res, getStreamOperations([].push.bind(ctx.responseFilters)));
     await next();
 }

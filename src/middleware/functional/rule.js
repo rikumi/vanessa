@@ -22,7 +22,7 @@ const ruleMiddleware = async (ctx, next) => {
             console: 'redirect',
             sandbox: createSandbox(ctx, script.name),
             require: {
-                external: true,
+                external: ['*'],
                 builtin: ['*'],
                 context: 'sandbox'
             }

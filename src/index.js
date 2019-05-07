@@ -224,9 +224,8 @@ module.exports = class Vanessa extends Koa {
 
         Object.defineProperties(ctx.request, {
             protocol: {
-                get() {
-                    return protocol;
-                }
+                value: protocol,
+                writable: true
             },
             ip: {
                 get() {

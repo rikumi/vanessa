@@ -1,10 +1,26 @@
-const { Readable, Writable } = require('stream');
-const collect = require('collect-all');
+const { Readable } = require('stream');
+const streamReplace = require('replacestream');
+const streamCollect = require('collect-all');
+const streamThrottle = require('brake');
+const streamDelay = require('delay-stream');
+const intoStream = require('into-stream');
+const toDuplex = require('duplexify');
+const PassthroughDuplex = require('minipass');
+const { NullWritable } = require('null-writable');
 
-const fromString = (str) => {
-    let readable = new Readable();
-    readable.push(str);
-    return readable;
+const toStream = (data) => {
+    if (data instanceof Readable) {
+        return data;
+    }
+    if (typeof data === 'object' && !(data instanceof Buffer)) {
+        try {
+            data = JSON.stringify(data);
+        } catch (e) {}
+    }
+    if (typeof data !== 'string') {
+        data = data.toString();
+    }
+    return intoStream(data);
 }
 
 const toString = async (stream) => {
@@ -13,7 +29,7 @@ const toString = async (stream) => {
         return '';
     }
     return new Promise((resolve) => {
-        stream.pipe(collect((buffer) => resolve(buffer.toString())));
+        stream.pipe(streamCollect((buffer) => resolve(buffer.toString())));
     });
 };
 
@@ -46,8 +62,64 @@ const steal = async (stream) => {
     }
 }
 
+const overwriteStream = (pipeFunc, data) => {
+    pipeFunc(toDuplex(new NullWritable(), toStream(data)));
+}
+
+const getStreamOperations = (pipeFunc) => {
+    let operations = {
+        async all() {
+            return new Promise((resolve) => pipeFunc(streamCollect(resolve)));
+        },
+        overwrite(data) {
+            overwriteStream(pipeFunc, data);
+            return operations;
+        },
+        transform(transform) {
+            pipeFunc(transform);
+            return operations;
+        },
+        replace(find, replace) {
+            // RegExp literals in sandboxes are not `instanceof` RegExp.
+            if (find.constructor.name === 'RegExp') {
+                find = new RegExp(find, find.flags);
+            }
+            pipeFunc(streamReplace(find, replace));
+            return operations;
+        },
+        prepend(data) {
+            let dup = new PassthroughDuplex();
+            dup.write(data);
+            pipeFunc(dup);
+            return operations;
+        },
+        append(data) {
+            let dup = new PassthroughDuplex();
+            pipeFunc(dup);
+            let end = dup.end.bind(dup);
+            dup.end = (chunk, encoding, cb) => {
+                dup.write(chunk, encoding);
+                dup.write(data);
+                end(null, null, cb);
+            };
+            return operations;
+        },
+        delay(ms) {
+            pipeFunc(streamDelay(ms));
+            return operations;
+        },
+        throttle(bytesPerSecond) {
+            pipeFunc(streamThrottle(bytesPerSecond));
+            return operations;
+        }
+    };
+    return operations;
+}
+
 module.exports = {
-    fromString,
+    toStream,
     toString,
-    steal
+    steal,
+    overwriteStream,
+    getStreamOperations,
 };
