@@ -282,29 +282,33 @@ export default {
                     scroller.scrollTop + scroller.clientHeight + 10 >= wrapper.clientHeight;
 
                 let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
-                let errors = next.filter(k => k.type === 'error' || k.type === 'trace');
 
-                errors.forEach((e) => {
-                    let match = /vm\.js:(\d+)(:(\d+))?/.exec(e.content);
-                    if (match) {
-                        let [, row,, col = 0] = match.map(Number);
-                        if (!col) {
-                            match = /\n(\s*)\^\s*\n/.exec(e.content);
-                            if (match) {
-                                col = match[1].length + 1;
+                // Add markers in rule editor when new error logs were fetched, except for the first fetch.
+                if (this.showingRule.logs.length) {
+                    let errors = next.filter(k => k.type === 'error' || k.type === 'trace');
+
+                    errors.forEach((e) => {
+                        let match = /vm\.js:(\d+)(:(\d+))?/.exec(e.content);
+                        if (match) {
+                            let [, row,, col = 0] = match.map(Number);
+                            if (!col) {
+                                match = /\n(\s*)\^\s*\n/.exec(e.content);
+                                if (match) {
+                                    col = match[1].length + 1;
+                                }
+                            }
+                            if (!this.markers.find(k => k.startLineNumber === row && k.startColumn === col)) {
+                                this.markers = this.markers.concat({
+                                    startLineNumber: row,
+                                    endLineNumber: row,
+                                    startColumn: col,
+                                    endColumn: 1000,
+                                    message: this.prettifyLog(e).split(/\n\s{4}at\s/)[0]
+                                });
                             }
                         }
-                        if (!this.markers.find(k => k.startLineNumber === row && k.startColumn === col)) {
-                            this.markers = this.markers.concat({
-                                startLineNumber: row,
-                                endLineNumber: row,
-                                startColumn: col,
-                                endColumn: 1000,
-                                message: this.prettifyLog(e).split(/\n\s{4}at\s/)[0]
-                            });
-                        }
-                    }
-                })
+                    });
+                }
 
                 if (this.showingRule == showingRule) {
                     logs = logs.concat(next);
