@@ -68,6 +68,7 @@ const overwriteStream = (pipeFunc, data) => {
 
 const getStreamOperations = (pipeFunc) => {
     let operations = {
+        // TODO: Not working yet
         async all() {
             return new Promise((resolve) => pipeFunc(streamCollect(resolve)));
         },
@@ -75,6 +76,7 @@ const getStreamOperations = (pipeFunc) => {
             overwriteStream(pipeFunc, data);
             return operations;
         },
+        // TODO: Not tested yet
         transform(transform) {
             pipeFunc(transform);
             return operations;
@@ -87,12 +89,14 @@ const getStreamOperations = (pipeFunc) => {
             pipeFunc(streamReplace(find, replace));
             return operations;
         },
+        // TODO: Not working yet
         prepend(data) {
             let dup = new PassthroughDuplex();
             dup.write(data);
             pipeFunc(dup);
             return operations;
         },
+        // TODO: Not working yet
         append(data) {
             let dup = new PassthroughDuplex();
             pipeFunc(dup);
