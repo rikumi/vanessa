@@ -12,7 +12,7 @@ const log = (ctx, rule, type, ...content) => {
     ctx.summary.logs.push({ rule, type, content });
 
     logsByRuleName[rule] = logsByRuleName[rule] || new AgingQueue(1024);
-    logsByRuleName[rule].push({ ctxId: ctx.id, type, content });
+    logsByRuleName[rule].push({ ctxId: ctx.id, ip: ctx.ip, type, content });
 };
 
 module.exports = {

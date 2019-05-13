@@ -14,6 +14,8 @@ const ruleMiddleware = async (ctx, next) => {
             async (name) => ({ name, content: await getRule(name) })
         )
     )).filter(k => k.content != null);
+
+    ctx.session.selectedRules = scripts.map(k => k.name);
     
     let middleware = [];
 

@@ -1,4 +1,6 @@
 const { getAllRuleNames, getRule } = require('../../util/rule');
+const isLocalhost = require('../../util/is-localhost');
+const { logsByRuleName } = require('../../util/console');
 
 const getRules = async (ctx) => {
     let selected = ctx.session.selectedRules || [];
@@ -59,10 +61,28 @@ const deselectAllRules = async (ctx) => {
     ctx.body = 'OK';
 };
 
+const getLogsByRule = async (ctx) => {
+    let { name = '', from = 0 } = ctx.params;
+    name = name.trim();
+    if (!name) {
+        ctx.throw(400);
+    } else if (!logsByRuleName[name]) {
+        ctx.body = [];
+        return;
+    }
+
+    let result = logsByRuleName[name].slice(from);
+    if (!isLocalhost(ctx.ip)) {
+        result = result.filter(k => k.ip !== ctx.ip);
+    }
+    ctx.body = result;
+};
+
 module.exports = {
     getRules,
     getRuleByName,
     selectRule,
     deselectRule,
-    deselectAllRules
+    deselectAllRules,
+    getLogsByRule
 };

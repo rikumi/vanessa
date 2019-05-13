@@ -1,18 +1,18 @@
 <template>
     <div class='app-root'>
         <div class='left'>
-            <div class='title' @click='showInfo'>Vanessa</div>
+            <div class='title' @click='showInfo'>{{ isAdmin ? 'Vanessa' : 'Vanessa Guest Mode' }}</div>
             <div class='section'>
                 <div class='section-title'>Rules</div>
                 <button class='disable-all' @click='disableAllRules()'>Disable All</button>
             </div>
             <div class='rules'>
-                <div class='rule' v-for='rule in rules' :key='rule.name' :class='{ editing: showingRule && rule.name === showingRule.name }' @click='showRule(rule)'>
+                <div class='rule' v-for='rule in rules' :key='rule.name' :class='{ editing: showingRule && rule.name === showingRule.name }' @click='isAdmin ? showRule(rule) : toggleRule(rule)'>
                     <div class='rule-select' :class='{ selected: rule.isSelected }' @click.stop='toggleRule(rule)'></div>
                     <div class='rule-name'>{{ rule.name }}</div>
-                    <div class='rule-remove' @click.stop='removeRule(rule)'></div>
+                    <div class='rule-remove' v-if='isAdmin' @click.stop='removeRule(rule)'></div>
                 </div>
-                <div class='rule-add'>
+                <div class='rule-add' v-if='isAdmin'>
                     <input v-model='newRuleName' placeholder='New rule...' @blur='addRule' @keypress.enter='addRule'/>
                 </div>
             </div>
@@ -98,6 +98,7 @@ const monospaceFonts = '"Fira Code", "Monaco", "Source Code Pro", monospace'
 
 export default {
     data: () => ({
+        isAdmin: false,
         rules: [],
         histories: [],
         editor: null,
@@ -115,7 +116,7 @@ export default {
         setInterval(() => this.refreshHistory(), 1000);
         setInterval(() => this.refreshLogs(), 1000);
     },
-    mounted() {
+    async mounted() {
         this.editor = monaco.editor.create(this.$refs.editorContainer, {
             minimap: {
                 enabled: false
@@ -144,10 +145,15 @@ export default {
                 this.editorSave();
             }
         });
-        this.showInfo();
+
         window.addEventListener('resize', () => {
             this.editor.layout();
         });
+
+        this.isAdmin = (await api.get('/is-admin')).data;
+        this.isAdmin = this.isAdmin === true || this.isAdmin === 'true';
+        
+        this.showInfo();
     },
     watch: {
         hasEditor() {
@@ -170,7 +176,7 @@ export default {
             if (rule) {
                 this.showingInfo = null;
                 this.showingHistory = null;
-                this.editorSetContent(rule.name, rule.content, true);
+                this.editorSetContent(rule.name, rule.content, this.isAdmin);
             }
         },
         showingHistory() {
@@ -192,7 +198,9 @@ export default {
     },
     methods: {
         async showInfo() {
-            this.showingInfo = (await api.get('/admin/info')).data;
+            if (this.isAdmin) {
+                this.showingInfo = (await api.get('/admin/info')).data;
+            }
         },
         async reload() {
             this.rules = (await api.get('/rule')).data;
@@ -220,6 +228,7 @@ export default {
             }
         },
         async addRule() {
+            if (!this.isAdmin) return;
             let name = this.newRuleName;
             if (!name) {
                 return;
@@ -254,6 +263,7 @@ export default {
             }
         },
         async removeRule(rule) {
+            if (!this.isAdmin) return;
             if (confirm(`Confirm to remove rule ${rule.name}.`)) {
                 await api.delete('/admin/rule/' + rule.name);
                 if (this.showingRule && rule.name === this.showingRule.name) {
@@ -267,11 +277,13 @@ export default {
             this.reload();
         },
         async saveRule() {
+            if (!this.isAdmin) return;
             this.showingRule.content = this.editor.getModel().getValue();
             await api.post('/admin/rule/' + this.showingRule.name, this.showingRule.content);
             this.markers = [];
         },
         async refreshLogs() {
+            if (!this.isAdmin) return;
             let { showingRule } = this;
             if (showingRule) {
                 let { logs = [] } = showingRule;
@@ -281,7 +293,7 @@ export default {
                 let isAtBottom = !wrapper ||
                     scroller.scrollTop + scroller.clientHeight + 10 >= wrapper.clientHeight;
 
-                let next = (await api.get('/admin/log/' + showingRule.name + '/~' + fetchFromId)).data;
+                let next = (await api.get('/log/' + showingRule.name + '/~' + fetchFromId)).data;
 
                 // After awaiting, the showing rule might have changed
                 if (this.showingRule == showingRule) {
@@ -438,6 +450,11 @@ input, textarea {
     flex-direction: column;
     user-select: none;
 
+    @media screen and (max-width: 600px) {
+        width: 100%;
+        border-right: none;
+    }
+
     .title {
         text-transform: uppercase;
         color: #434144;
@@ -486,6 +503,12 @@ input, textarea {
             border: 1px solid #ddd;
             padding: 4px 14px;
         }
+    }
+
+    .rules {
+        max-height: 50vh;
+        overflow: scroll;
+        -webkit-overflow-scrolling: touch;
     }
 
     .rule {
@@ -550,7 +573,7 @@ input, textarea {
             min-width: 0;
         }
 
-        &:hover .rule-remove {
+        .rule-remove {
             width: 20px;
             position: relative;
 
@@ -573,6 +596,12 @@ input, textarea {
             &:hover::before {
                 opacity: .7;
                 transform: scale(1.1);
+            }
+        }
+
+        @media screen and (min-width: 600px) {
+            &:not(:hover) .rule-remove {
+                display: none;
             }
         }
     }
@@ -613,6 +642,7 @@ input, textarea {
     .table-container {
         flex: 1 1 0;
         overflow: scroll;
+        -webkit-overflow-scrolling: touch;
         display: flex;
         flex-direction: column;
         font-size: 13px;
@@ -701,8 +731,10 @@ input, textarea {
             }
         }
 
-        &:hover::-webkit-scrollbar {
-            display: initial;
+        @media screen and (min-width: 600px) {
+            &:hover::-webkit-scrollbar {
+                display: initial;
+            }
         }
     }
 }
@@ -713,6 +745,10 @@ input, textarea {
     background: #ffffff;
     display: flex;
     flex-direction: column;
+
+    @media screen and (max-width: 600px) {
+        display: none;
+    }
     
     .editor-title-bar {
         flex: 0 0 40px;

@@ -28,21 +28,7 @@ const deleteRule = async (ctx) => {
     ctx.body = 'OK';
 };
 
-const getLogsByRule = async (ctx) => {
-    let { name = '', from = 0 } = ctx.params;
-    name = name.trim();
-    if (!name) {
-        ctx.throw(400);
-    } else if (!logsByRuleName[name]) {
-        ctx.body = [];
-        return;
-    }
-    
-    ctx.body = logsByRuleName[name].slice(from);
-};
-
 module.exports = {
     addOrModifyRule,
-    deleteRule,
-    getLogsByRule
+    deleteRule
 };

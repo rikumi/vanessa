@@ -2,13 +2,15 @@ const Router = require('koa-router');
 const compose = require('koa-compose');
 const adminRouter = require('./admin');
 const downloadCert = require('./cert');
+const isAdmin = require('./is-admin');
 
 const {
     getRules,
     getRuleByName,
     selectRule,
     deselectRule,
-    deselectAllRules
+    deselectAllRules,
+    getLogsByRule
 } = require('./rule');
 
 const {
@@ -20,6 +22,7 @@ const {
 
 const router = new Router();
 
+router.use('/is-admin', isAdmin);
 router.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
 router.get('/cert', downloadCert);
 router.get('/rule', getRules);
@@ -32,5 +35,7 @@ router.get('/history/~:from', getHistory);
 router.get('/history/:id', getHistoryDetail);
 router.get('/history/:id/req', getRequestBody);
 router.get('/history/:id/res', getResponseBody);
+router.get('/log/:name', getLogsByRule);
+router.get('/log/:name/~:from', getLogsByRule);
 
 module.exports = router;
