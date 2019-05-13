@@ -211,7 +211,7 @@ export default {
 
             let prev = this.histories.filter(k => k.id < fetchFromId);
             let next = (await api.get('/history/~' + fetchFromId)).data;
-            this.histories = prev.concat(next);
+            this.histories = prev.concat(next).slice(-1000);
             if (this.showingHistory && !this.showingHistory.response.status) {
                 let updated = next.find(k => k.id === this.showingHistory.id);
                 if (updated.status) {

@@ -7,6 +7,7 @@ const intoStream = require('into-stream');
 const toDuplex = require('duplexify');
 const { NullWritable } = require('null-writable');
 const MiniPass = require('minipass');
+const cheerio = require('cheerio');
 
 // Force the MiniPass prototype to extend Stream.prototype
 // so as not to be treated by koa as JSON response.
@@ -80,6 +81,9 @@ const getStreamOperations = (ctx, type) => {
         async all() {
             ensurePhase('read');
             return await streamCollect(requestOrResponse.body);
+        },
+        async cheerio() {
+            return cheerio.load(await operations.all())
         },
         // TODO: Not tested yet
         transform(transform) {
