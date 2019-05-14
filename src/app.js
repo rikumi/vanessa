@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const os = require('os');
 const chalk = require('chalk');
 const { argv } = require('yargs');
 const stringify = require('./util/safe-json');
@@ -28,4 +29,21 @@ vanessa.use(timeoutMiddleware);
 
 const { port = 8099 } = argv;
 vanessa.listen(port);
-console.log('⚉ Vanessa listening at', port);
+
+const ifs = os.networkInterfaces();
+const addresses = []
+    .concat(...Object.keys(ifs).map(name => ifs[name].map(k => Object.assign(k, {name}))))
+    .map(k => /:/.test(k.address) ? 
+        `(${k.name} ${k.family}) [${k.address}]:${port}` :
+        `(${k.name} ${k.family}) ${k.address}:${port}`
+    );
+
+console.log(chalk`
+{cyan ⚉ Vanessa listening at:}
+{yellow ${addresses.join('\n')}}
+
+{cyan For each device:}
+{cyan 1.} Set HTTP Proxy to a proper address from above.
+{cyan 2.} Disable any VPN service.
+{cyan 3.} Visit {green.underline http://vanes.sa/} and follow the instructions.
+`);

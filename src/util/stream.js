@@ -82,17 +82,26 @@ const getStreamOperations = (ctx, type) => {
             ensurePhase('read');
             return await streamCollect(requestOrResponse.body);
         },
+        async json() {
+            return JSON.parse(await operations.all());
+        },
         async cheerio() {
-            return cheerio.load(await operations.all())
+            return cheerio.load(await operations.all());
         },
         // TODO: Not tested yet
         transform(transform) {
             ensurePhase('write');
+            if (requestOrResponse.headers) {
+                delete requestOrResponse.headers['content-length'];
+            }
             pipeThrough(transform);
             return operations;
         },
         replace(find, replace) {
             ensurePhase('write');
+            if (requestOrResponse.headers) {
+                delete requestOrResponse.headers['content-length'];
+            }
             // RegExp literals in sandboxes are not `instanceof` RegExp.
             if (find.constructor.name === 'RegExp') {
                 find = new RegExp(find, find.flags);
@@ -102,6 +111,13 @@ const getStreamOperations = (ctx, type) => {
         },
         prepend(data) {
             ensurePhase('write');
+            if (requestOrResponse.headers) {
+                let length = Number(requestOrResponse.headers['content-length']);
+                if (!Number.isNaN(length)) {
+                    length += data.length;
+                    requestOrResponse.headers['content-length'] = length.toString;
+                }
+            }
             let dup = new MiniPass();
             dup.write(data);
             pipeThrough(dup);
@@ -109,6 +125,13 @@ const getStreamOperations = (ctx, type) => {
         },
         append(data) {
             ensurePhase('write');
+            if (requestOrResponse.headers) {
+                let length = Number(requestOrResponse.headers['content-length']);
+                if (!Number.isNaN(length)) {
+                    length += data.length;
+                    requestOrResponse.headers['content-length'] = length.toString;
+                }
+            }
             let dup = new MiniPass();
             pipeThrough(dup);
             let end = dup.end.bind(dup);

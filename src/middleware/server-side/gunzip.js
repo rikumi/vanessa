@@ -6,6 +6,7 @@ const gunzipMiddleware = async (ctx, next) => {
     if (encoding && encoding.toLowerCase() == 'gzip') {
         ctx.summary.gzip = { enabled: true };
         ctx.response._body = ctx.response.body.pipe(createGunzip());
+        ctx.remove('content-length');
     }
 };
 

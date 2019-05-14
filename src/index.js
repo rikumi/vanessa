@@ -187,7 +187,7 @@ module.exports = class Vanessa extends Koa {
 
                 let httpsServer = https.createServer(options);
                 httpsServer.on('error', (e) => this.emit('error', e));
-                httpsServer.on('clientError', (e) => this.emit('error', e));
+                // httpsServer.on('clientError', (e) => this.emit('error', e));
                 httpsServer.on('connect', this._onHttpServerConnect.bind(this));
                 httpsServer.on('request', this._onHttpServerRequest.bind(this, true));
                 let wssServer = new WebSocket.Server({ server: httpsServer });

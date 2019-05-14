@@ -44,7 +44,7 @@ const serverEndMiddleware = async (ctx) => {
     
     // res.headers['transfer-encoding'] = 'chunked';
     // res.headers['connection'] = 'close';
-    delete res.headers['content-length'];
+    // delete res.headers['content-length'];
     ctx.response.set(res.headers);
     ctx.response._body = res;
 };
