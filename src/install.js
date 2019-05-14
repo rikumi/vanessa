@@ -1,6 +1,7 @@
 const os = require('os');
 const path = require('path');
 const util = require('util');
+const chalk = require('chalk');
 const readline = require('readline');
 
 const isRoot = require('is-root');
@@ -23,8 +24,20 @@ const startup = require('user-startup');
 
         startup.remove('vanessa');
         startup.create('vanessa', nodePath, [scriptPath, '--port', port], logPath);
-        console.log('\n⚉ Created and started Vanessa daemon at', port);
-        
         rl.close();
+
+        const ifs = os.networkInterfaces();
+        const addresses = [].concat(...Object.keys(ifs).map((name) => ifs[name].map((k) => Object.assign(k, { name })))).map((k) => (/:/.test(k.address) ? `(${k.name} ${k.family}) [${k.address}]:${port}` : `(${k.name} ${k.family}) ${k.address}:${port}`));
+
+        console.log(chalk`
+{cyan ⚉ Vanessa listening at:}
+{yellow ${addresses.join('\n')}}
+
+{cyan For each device:}
+{cyan 1.} Set HTTP Proxy to a proper address from above.
+{cyan 2.} Disable any VPN service.
+{cyan 3.} Visit {green.underline http://vanes.sa/} and follow the instructions.
+`
+        );
     }
 })();
