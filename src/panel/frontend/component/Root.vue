@@ -7,7 +7,7 @@
                 <button class='disable-all' @click='disableAllRules()'>Disable All</button>
             </div>
             <div class='rules'>
-                <div class='rule' v-for='rule in rules' :key='rule.name' :class='{ editing: showingRule && rule.name === showingRule.name }' @click='isAdmin ? showRule(rule) : toggleRule(rule)'>
+                <div class='rule' v-for='rule in rules' :key='rule.name' :class='{ editing: showingRule && rule.name === showingRule.name }' @click='showRule(rule)'>
                     <div class='rule-select' :class='{ selected: rule.isSelected }' @click.stop='toggleRule(rule)'></div>
                     <div class='rule-name'>{{ rule.name }}</div>
                     <div class='rule-remove' v-if='isAdmin' @click.stop='removeRule(rule)'></div>
@@ -32,7 +32,7 @@
                         </div>
                         <div class='row row-2'>
                             <div class='id'>#{{ history.id }}</div>
-                            <div class='ip'>From: {{ history.ip }}</div>
+                            <div class='ip' v-if='isAdmin'>From: {{ history.ip }}</div>
                             <div class='status'>Status: {{ history.status }}</div>
                             <div class='type'>Type: {{ history.type || '[unspecified]' }}</div>
                         </div>
@@ -94,7 +94,7 @@ import iconLoading from '../assets/loading.svg';
 
 monaco.editor.defineTheme('ayu-light', theme);
 
-const monospaceFonts = '"Fira Code", "Monaco", "Source Code Pro", monospace'
+const monospaceFonts = '"Fira Code", Monaco, "Source Code Pro", Menlo, monospace'
 
 export default {
     data: () => ({
@@ -123,7 +123,6 @@ export default {
             },
             language: 'javascript',
             fontFamily: monospaceFonts,
-            fontLigatures: true,
             fontSize: 13,
             readOnly: true,
             wordWrap: 'on',
@@ -814,7 +813,7 @@ input, textarea {
                 overflow-y: scroll;
 
                 .logs-wrapper {
-                    font-family: "Fira Code", "Monaco", "Source Code Pro", monospace;
+                    font-family: "Fira Code", Monaco, "Source Code Pro", Menlo, monospace;
 
                     .log {
                         white-space: pre-wrap;
@@ -885,7 +884,7 @@ input, textarea {
                 opacity: .7;
 
                 code {
-                    font-family: 'Fira Code', 'Monaco', 'Source Code Pro', 'Courier New', Courier, monospace;
+                    font-family: 'Fira Code', 'Monaco', 'Source Code Pro', Menlo, monospace;
                     margin: 0 5px;
                     padding: 2px 3px;
                     background: #f7f7f7;

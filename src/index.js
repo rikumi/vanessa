@@ -11,6 +11,7 @@ const ca = require('./certs');
 const clientEndMiddleware = require('./middleware/client-side/client-end');
 const serverEndMiddleware = require('./middleware/server-side/server-end');
 const gunzipMiddleware = require('./middleware/server-side/gunzip');
+const gzipMiddleware = require('./middleware/client-side/gzip');
 const summaryMiddleware = require('./middleware/client-side/summary');
 const clientProxyMiddleware = require('./middleware/client-side/proxy');
 const serverProxyMiddleware = require('./middleware/server-side/proxy');
@@ -33,6 +34,9 @@ const composeMiddleware = (middleware) => [
 
     // Initialize the context and request options
     clientEndMiddleware,
+    
+    // Encode gzip responses
+    gzipMiddleware,
 
     // Initialize the proxy-chaining options
     // and detect system proxy settings as default
@@ -44,7 +48,7 @@ const composeMiddleware = (middleware) => [
     // Middleware provided by user
     ...middleware,
 
-    // Accept responses in gzip encoding and decode them in advance
+    // Decode gzip responses
     gunzipMiddleware,
 
     // Use proxy-chaining options to prepare requests through a remote proxy

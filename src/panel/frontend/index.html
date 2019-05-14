@@ -7,7 +7,15 @@
     <title>Vanessa</title>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <p>
+            Your platform does not support JavaScript.<br>
+            Please visit <a href="http://vanes.sa">vanes.sa</a> using a web browser on this device,<br>
+            or manually <a href="/api/cert">download the root certificate</a> and trust it.<br>
+            After you have trusted the certificate, visit <a href="https://vanes.sa">vanes.sa</a> in HTTPS to skip this page.
+        </p>
+    </div>
+    <script>document.getElementById('app').innerHTML = '';</script>
     <script src="./main.js"></script>
 </body>
 </html>
