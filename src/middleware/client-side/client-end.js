@@ -55,7 +55,7 @@ const clientEndMiddleware = async (ctx, next) => {
     ctx.phase = 'request';
     ctx.summary = {};
     ctx.requestOptions = {};
-    ctx.request.body = ctx.req;
+    ctx.rawReq = ctx.req;
 
     await next();
 }

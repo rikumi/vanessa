@@ -5,6 +5,7 @@ const https = require('https');
 const serverEndMiddleware = async (ctx) => {
     let res;
     try {
+        ctx.request.body = ctx.req;
         res = await new Promise((resolve, reject) => {
             let proto = ctx.protocol === 'https' ? https : http;
             let { method, host: hostport, path, querystring, headers } = ctx.request;
@@ -47,6 +48,7 @@ const serverEndMiddleware = async (ctx) => {
     // delete res.headers['content-length'];
     ctx.response.set(res.headers);
     ctx.response._body = res;
+    ctx.rawRes = res;
 };
 
 module.exports = serverEndMiddleware;
