@@ -5,6 +5,7 @@ const stringify = require('./util/safe-json');
 
 const Vanessa = require('./index');
 
+const summaryMiddleware = require('./middleware/functional/summary');
 const { errorMiddleware, errorHandler } = require('./middleware/functional/error');
 const sessionMiddleware = require('./middleware/functional/session');
 const panelMiddleware = require('./middleware/functional/panel');
@@ -18,6 +19,7 @@ process.on('unhandledRejection', (e) => console.error(chalk.bgRed.black('[reject
 
 let vanessa = new Vanessa();
 vanessa.on('error', errorHandler);
+vanessa.use(summaryMiddleware);
 vanessa.use(errorMiddleware);
 vanessa.use(sessionMiddleware);
 vanessa.use(panelMiddleware);

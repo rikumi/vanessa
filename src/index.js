@@ -12,7 +12,6 @@ const clientEndMiddleware = require('./middleware/client-side/client-end');
 const serverEndMiddleware = require('./middleware/server-side/server-end');
 const gunzipMiddleware = require('./middleware/server-side/gunzip');
 const gzipMiddleware = require('./middleware/client-side/gzip');
-const summaryMiddleware = require('./middleware/client-side/summary');
 const clientProxyMiddleware = require('./middleware/client-side/proxy');
 const serverProxyMiddleware = require('./middleware/server-side/proxy');
 
@@ -41,9 +40,6 @@ const composeMiddleware = (middleware) => [
     // Initialize the proxy-chaining options
     // and detect system proxy settings as default
     clientProxyMiddleware,
-
-    // Print logs for requests and responses
-    summaryMiddleware,
 
     // Middleware provided by user
     ...middleware,
