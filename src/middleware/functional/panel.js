@@ -25,19 +25,14 @@ const routerMiddleware = compose([
 ]);
 
 const panelMiddleware = async (ctx, next) => {
-    if (ctx.host === 'vanes.sa') {
-        if (ctx.protocol === 'http' && ctx.session && ctx.session.isCertInstalledAndTrusted) {
-            ctx.redirect(ctx.url.replace('http:', 'https:'));
-        } else {
-            if (ctx.protocol === 'https') ctx.session.isCertInstalledAndTrusted = true;
-            await routerMiddleware(ctx, async () => {});
+    if (ctx.host === 'vanes.sa' || !ctx.host || isVanessaHostAndPort(ctx.host)) {
+        if (ctx.host === 'vanes.sa' && 
+            ctx.protocol === 'http' &&
+            ctx.session &&
+            ctx.session.isCertInstalledAndTrusted) {
+            return ctx.redirect(ctx.url.replace('http:', 'https:'));
         }
-    } else {
-        if (!ctx.host || isVanessaHostAndPort(ctx.host) || !ctx.session.isCertInstalledAndTrusted) {
-            ctx.redirect('http://vanes.sa/');
-        } else {
-            await next();
-        }
+        await routerMiddleware(ctx, async () => {});
     }
 };
 
