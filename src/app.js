@@ -19,8 +19,8 @@ process.on('unhandledRejection', (e) => console.error(chalk.bgRed.black('[reject
 
 let vanessa = new Vanessa();
 vanessa.on('error', errorHandler);
-vanessa.use(summaryMiddleware);
 vanessa.use(errorMiddleware);
+vanessa.use(summaryMiddleware);
 vanessa.use(sessionMiddleware);
 vanessa.use(panelMiddleware);
 vanessa.use(collectMiddleware);
