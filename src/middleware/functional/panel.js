@@ -33,6 +33,8 @@ const panelMiddleware = async (ctx, next) => {
             return ctx.redirect(ctx.url.replace('http:', 'https:'));
         }
         await routerMiddleware(ctx, async () => {});
+    } else {
+        await next();
     }
 };
 
