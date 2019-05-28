@@ -5,7 +5,6 @@ const { argv } = require('yargs');
 const Vanessa = require('./index');
 
 const summaryMiddleware = require('./middleware/functional/summary');
-const { errorMiddleware, errorHandler } = require('./middleware/functional/error');
 const sessionMiddleware = require('./middleware/functional/session');
 const guideMiddleware = require('./middleware/functional/guide');
 const panelMiddleware = require('./middleware/functional/panel');
@@ -18,8 +17,6 @@ process.on('uncaughtException', (e) => console.error(chalk.bgRed.black('[excepti
 process.on('unhandledRejection', (e) => console.error(chalk.bgRed.black('[rejection]'), e));
 
 let vanessa = new Vanessa();
-vanessa.on('error', errorHandler);
-vanessa.use(errorMiddleware);
 vanessa.use(summaryMiddleware);
 vanessa.use(sessionMiddleware);
 vanessa.use(guideMiddleware);
