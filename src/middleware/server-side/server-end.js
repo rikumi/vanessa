@@ -1,6 +1,7 @@
 const { Middleware } = require('koa');
 const http = require('http');
 const https = require('https');
+const collect = require('collect-all');
 
 const serverEndMiddleware = async (ctx) => {
     let res;
@@ -25,6 +26,7 @@ const serverEndMiddleware = async (ctx) => {
             req.on('error', reject);
 
             ctx.request.body.pipe(req);
+            ctx.request.body.pipe(collect((buffer) => ctx.request.finalBody = buffer));
         });
     } catch (e) {
         ctx.throw(502, e);

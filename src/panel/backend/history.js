@@ -56,11 +56,11 @@ const getRequestBody = (ctx) => {
     } else if (!shouldShow(ctx, detail)) {
         ctx.throw(403);
     } else {
-        let body = detail.request.body;
+        let body = detail.request.finalBody;
         if (body == null) {
             ctx.throw(404);
         } else {
-            ctx.set('content-type', detail.get('content-type'));
+            ctx.set('content-type', detail.get('content-type') || 'text/plain');
             ctx.set('content-length', detail.get('content-length'));
             ctx.set('content-encoding', detail.get('content-encoding'));
             ctx.body = body;
@@ -76,11 +76,11 @@ const getResponseBody = (ctx) => {
     } else if (!shouldShow(ctx, detail)) {
         ctx.throw(403);
     } else {
-        let body = detail.response.body;
+        let body = detail.response.finalBody;
         if (body == null) {
             ctx.throw(404);
         } else {
-            ctx.set('content-type', detail.response.headers['content-type']);
+            ctx.set('content-type', detail.response.headers['content-type'] || 'text/plain');
             ctx.set('content-length', detail.response.headers['content-length']);
             ctx.set('content-encoding', detail.response.headers['content-encoding']);
             ctx.set('content-disposion', detail.response.headers['content-disposion']);

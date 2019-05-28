@@ -1,4 +1,4 @@
-const { Stream, Readable } = require('stream');
+const { Stream, Readable, PassThrough } = require('stream');
 const streamReplace = require('replacestream');
 const streamCollect = require('raw-body');
 const streamThrottle = require('brake');
@@ -6,15 +6,7 @@ const streamDelay = require('delay-stream');
 const intoStream = require('into-stream');
 const toDuplex = require('duplexify');
 const { NullWritable } = require('null-writable');
-const MiniPass = require('minipass');
 const cheerio = require('cheerio');
-
-// Force the MiniPass prototype to extend Stream.prototype
-// so as not to be treated by koa as JSON response.
-
-// - Before modification: EventEmitter <- MiniPass
-// - After modification:  EventEmitter <- Stream <- MiniPass
-MiniPass.prototype.__proto__ = Stream.prototype;
 
 const toStream = (data) => {
     if (data instanceof Readable) {
@@ -43,7 +35,7 @@ const steal = async (stream) => {
         });
     } else {
         return new Promise((resolve, reject) => {
-            let buffer = new Buffer(0);
+            let buffer = Buffer.from('');
 
             let write = stream.write;
             stream.write = (chunk, ...args) => {
@@ -118,7 +110,7 @@ const getStreamOperations = (ctx, type) => {
                     requestOrResponse.headers['content-length'] = length.toString;
                 }
             }
-            let dup = new MiniPass();
+            let dup = new PassThrough();
             dup.write(data);
             pipeThrough(dup);
             return operations;
@@ -132,7 +124,7 @@ const getStreamOperations = (ctx, type) => {
                     requestOrResponse.headers['content-length'] = length.toString;
                 }
             }
-            let dup = new MiniPass();
+            let dup = new PassThrough();
             pipeThrough(dup);
             let end = dup.end.bind(dup);
             dup.end = (chunk, encoding, cb) => {

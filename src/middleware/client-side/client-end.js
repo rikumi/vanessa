@@ -1,5 +1,8 @@
 const { inspect } = require('util');
 const chalk = require('chalk');
+const collect = require('collect-all');
+const intoStream = require('into-stream');
+const stringify = require('json-stringify-safe');
 
 const clientEndMiddleware = async (ctx, next) => {
     for (let h in ctx.request.header) {
@@ -58,6 +61,20 @@ const clientEndMiddleware = async (ctx, next) => {
     ctx.rawReq = ctx.req;
 
     await next();
+
+    if (ctx.response.body == null) {
+        ctx.status = 404;
+        ctx.response.body = 'Vanessa - 404 Not Found';
+    } else if (typeof ctx.response.body.pipe !== 'function') {
+        if (!Buffer.isBuffer(ctx.response.body)) {
+            if (typeof ctx.response.body !== 'string') {
+                ctx.response.body = stringify(ctx.response.body);
+            }
+            ctx.response.body = Buffer.from(ctx.response.body);
+        }
+        ctx.response.body = intoStream(ctx.response.body);
+    }
+    ctx.response.body.pipe(collect((buffer) => (ctx.response.finalBody = buffer)));
 }
 
 module.exports = clientEndMiddleware;

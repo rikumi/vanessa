@@ -3,15 +3,12 @@ const http = require('http');
 const https = require('https');
 const WebSocket = require('ws');
 const url = require('url');
-const semaphore = require('semaphore');
 const compose = require('koa-compose');
 const Koa = require('koa');
 
 const ca = require('./certs');
 const clientEndMiddleware = require('./middleware/client-side/client-end');
 const serverEndMiddleware = require('./middleware/server-side/server-end');
-const gunzipMiddleware = require('./middleware/server-side/gunzip');
-const gzipMiddleware = require('./middleware/client-side/gzip');
 const clientProxyMiddleware = require('./middleware/client-side/proxy');
 const serverProxyMiddleware = require('./middleware/server-side/proxy');
 
@@ -33,9 +30,6 @@ const composeMiddleware = (middleware) => [
 
     // Initialize the context and request options
     clientEndMiddleware,
-    
-    // Encode gzip responses
-    gzipMiddleware,
 
     // Initialize the proxy-chaining options
     // and detect system proxy settings as default
@@ -43,9 +37,6 @@ const composeMiddleware = (middleware) => [
 
     // Middleware provided by user
     ...middleware,
-
-    // Decode gzip responses
-    gunzipMiddleware,
 
     // Use proxy-chaining options to prepare requests through a remote proxy
     serverProxyMiddleware,
@@ -56,12 +47,10 @@ const composeMiddleware = (middleware) => [
 
 module.exports = class Vanessa extends Koa {
     listen(...args) {
-        this.sslServers = {};
-        this.sslSemaphores = {};
         this.connectRequests = {};
         this.httpServer = http.createServer();
-        this.httpServer.on('connect', this._onHttpServerConnect.bind(this));
-        this.httpServer.on('request', this._onHttpServerRequest.bind(this, false));
+        this.httpServer.on('connect', this.onConnectRequest.bind(this));
+        this.httpServer.on('request', this.onPlainRequest.bind(this, false));
         this.wsServer = new WebSocket.Server({ server: this.httpServer });
         this.wsServer.on('error', (e) => this.emit('error', e));
         this.wsServer.on('connection', (ws, req) => {
@@ -75,34 +64,20 @@ module.exports = class Vanessa extends Koa {
     close() {
         this.httpServer.close();
         delete this.httpServer;
-        if (this.httpsServer) {
-            this.httpsServer.close();
-            delete this.httpsServer;
-            delete this.wssServer;
-            delete this.sslServers;
-        }
-        if (this.sslServers) {
-            Object.keys(this.sslServers).forEach((srvName) => {
-                let server = this.sslServers[srvName].server;
-                if (server) server.close();
-                delete this.sslServers[srvName];
-            });
-        }
-        return this;
     }
 
-    _onHttpServerConnect(req, socket, head) {
+    onConnectRequest(req, socket, head) {
         // we need first byte of data to detect if request is SSL encrypted
         if (!head || head.length === 0) {
-            socket.once('data', this._onHttpServerConnectData.bind(this, req, socket));
+            socket.once('data', this.onConnectData.bind(this, req, socket));
             socket.write('HTTP/1.1 200 OK\r\n');
             return socket.write('\r\n');
         } else {
-            this._onHttpServerConnectData(req, socket, head);
+            this.onConnectData(req, socket, head);
         }
     }
 
-    _onHttpServerConnectData(req, socket, head) {
+    onConnectData(req, socket, head) {
         const makeConnection = (port) => {
             // open a TCP connection to the remote host
             let conn = net.connect(
@@ -150,70 +125,33 @@ module.exports = class Vanessa extends Koa {
         * - everything else is considered to be unencrypted
         */
         if (head[0] == 0x16 || head[0] == 0x80 || head[0] == 0x00) {
-            // URL is in the form 'hostname:port'
             let hostname = req.url.split(':', 2)[0];
-            let sslServer = this.sslServers[hostname];
-            if (sslServer) {
-                return makeConnection(sslServer.port);
-            }
-            let wildcardHost = hostname.replace(/[^\.]+\./, '*.');
-            let sem = this.sslSemaphores[wildcardHost];
-            if (!sem) {
-                sem = this.sslSemaphores[wildcardHost] = semaphore(1);
-            }
-            sem.take(() => {
-                if (this.sslServers[hostname]) {
-                    process.nextTick(sem.leave.bind(sem));
-                    return makeConnection(this.sslServers[hostname].port);
-                }
-                if (this.sslServers[wildcardHost]) {
-                    process.nextTick(sem.leave.bind(sem));
-                    this.sslServers[hostname] = {
-                        port: this.sslServers[wildcardHost]
-                    };
-                    return makeConnection(this.sslServers[hostname].port);
-                }
+            let options = Object.assign(
+                {
+                    hosts: [hostname]
+                },
+                ca[hostname]
+            );
 
-                let options = Object.assign(
-                    {
-                        hosts: [hostname]
-                    },
-                    ca[hostname]
-                );
-
-                let httpsServer = https.createServer(options);
-                httpsServer.on('error', (e) => this.emit('error', e));
-                // httpsServer.on('clientError', (e) => this.emit('error', e));
-                httpsServer.on('connect', this._onHttpServerConnect.bind(this));
-                httpsServer.on('request', this._onHttpServerRequest.bind(this, true));
-                let wssServer = new WebSocket.Server({ server: httpsServer });
-                wssServer.on('connection', (ws, req) => {
-                    ws['upgradeReq'] = req;
-                    this._onWebSocketServerConnect.call(this, true, ws, req);
-                });
-                httpsServer.listen(
-                    {
-                        port: 0,
-                        host: this.httpServer.address().address
-                    },
-                    () => {
-                        let sslServer = {
-                            server: httpsServer,
-                            wsServer: wssServer,
-                            port: httpsServer.address()['port']
-                        };
-                        this.sslServers[hostname] = sslServer;
-                        process.nextTick(sem.leave.bind(sem));
-                        makeConnection(sslServer.port);
-                    }
-                );
+            let httpsServer = https.createServer(options);
+            httpsServer.on('error', (e) => this.emit('error', e));
+            httpsServer.on('connect', this.onConnectRequest.bind(this));
+            httpsServer.on('request', this.onPlainRequest.bind(this, true));
+            let wssServer = new WebSocket.Server({ server: httpsServer });
+            wssServer.on('connection', (ws, req) => {
+                ws.upgradeReq = req;
+                this._onWebSocketServerConnect.call(this, true, ws, req);
             });
+            httpsServer.listen({
+                port: 0,
+                host: this.httpServer.address().address
+            }, () => makeConnection(httpsServer.address().port));
         } else {
-            return makeConnection(this.httpServer.address()['port']);
+            return makeConnection(this.httpServer.address().port);
         }
     }
 
-    _onHttpServerRequest(isSSL, req, res) {
+    onPlainRequest(isSSL, req, res) {
         const fn = compose(composeMiddleware(this.middleware));
         if (!this.listenerCount('error')) this.on('error', this.onerror);
 
