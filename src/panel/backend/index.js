@@ -5,7 +5,8 @@ const isAdmin = require('./is-admin');
 
 const {
     downloadCert,
-    trustHost
+    trustHost,
+    distrustHost
 } = require('./cert');
 
 const {
@@ -30,6 +31,7 @@ router.use('/is-admin', isAdmin);
 router.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
 router.get('/cert', downloadCert);
 router.get('/trust/:id', trustHost);
+router.get('/distrust/:id', distrustHost);
 router.get('/rule', getRules);
 router.get('/rule/:name', getRuleByName);
 router.post('/rule/:name', selectRule);

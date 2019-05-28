@@ -22,9 +22,20 @@ const serverEndMiddleware = async (ctx) => {
         });
         
         let req = proto.request(options, resolve);
-        req.on('error', reject);
+        ctx.response.isSecure = true;
+        req.on('error', (e) => {
+            if (/certificate|ssl/i.test(e.message.toLowerCase())) {
+                if ((ctx.session.trustedHosts || []).includes(ctx.host) || ctx.method === 'GET') {
+                    req = proto.request({ ...options, rejectUnauthorized: false }, resolve);
+                    ctx.response.isSecure = false;
+                    req.on('error', reject);
+                    ctx.request.body.pipe(req);
+                }
+            } else {
+                reject(e);
+            }
+        });
         ctx.phase = 'response';
-
         ctx.request.body.pipe(req);
         ctx.request.body.pipe(collect((buffer) => ctx.request.finalBody = buffer));
     });

@@ -9,13 +9,31 @@ const downloadCert = (ctx) => {
 };
 
 const trustHost = (ctx) => {
-    let { id } = ctx.params;
-    let history = recentContexts.get(id); 
-    ctx.session.trustedHost = (ctx.session.trustedHost || []).concat([ history.host ]);
-    ctx.redirect(history.url);
+    let { id: idOrHost } = ctx.params;
+    if (/^\d+$/.test(idOrHost)) {
+        let history = recentContexts.get(idOrHost);
+        ctx.session.trustedHosts = (ctx.session.trustedHosts || []).concat([ history.host ]);
+        ctx.redirect(history.url);
+    } else {
+        ctx.session.trustedHosts = (ctx.session.trustedHosts || []).concat([ idOrHost ]);
+        ctx.body = 'OK';
+    }
+};
+
+const distrustHost = (ctx) => {
+    let { id: idOrHost } = ctx.params;
+    if (/^\d+$/.test(idOrHost)) {
+        let history = recentContexts.get(idOrHost);
+        ctx.session.trustedHosts = (ctx.session.trustedHosts || []).filter(k => k !== history.host);
+        ctx.redirect(history.url);
+    } else {
+        ctx.session.trustedHosts = (ctx.session.trustedHosts || []).filter((k) => k !== idOrHost);
+        ctx.body = 'OK';
+    }
 };
 
 module.exports = {
     downloadCert,
-    trustHost
+    trustHost,
+    distrustHost
 };
