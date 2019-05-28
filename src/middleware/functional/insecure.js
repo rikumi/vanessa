@@ -3,7 +3,7 @@ const getBanner = (ctx, trusted) => `<!DOCTYPE html>
     VANESSA WARNING: The host <b>${ctx.host}</b> cannot provide a secure certificate.
     ${
         trusted ?
-        `You chose to trust this site. <a style="color:#fff;font:inherit;font-weight:bold" href="//vanes.sa/api/distrust/${ctx.id}">Distrust</a> <a style="color:#fff;font:inherit" href="#" onclick="this.parentElement.remove()">×</a>` :
+        `You chose to trust this site. <a style="color:#fff;font:inherit;font-weight:bold" href="//vanes.sa/api/distrust/${ctx.id}">Distrust</a> <a style="color:#fff;font:inherit" href="#" onclick="this.parentElement.remove()">x</a>` :
         `<a style="color:#fff;font:inherit;font-weight:bold;text-decoration:underline" href="//vanes.sa/api/trust/${ctx.id}">Always trust (DANGEROUS)</a>`
     }
 </div>
