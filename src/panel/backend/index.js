@@ -1,8 +1,12 @@
 const Router = require('koa-router');
 const compose = require('koa-compose');
 const adminRouter = require('./admin');
-const downloadCert = require('./cert');
 const isAdmin = require('./is-admin');
+
+const {
+    downloadCert,
+    trustHost
+} = require('./cert');
 
 const {
     getRules,
@@ -25,6 +29,7 @@ const router = new Router();
 router.use('/is-admin', isAdmin);
 router.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
 router.get('/cert', downloadCert);
+router.get('/trust/:id', trustHost);
 router.get('/rule', getRules);
 router.get('/rule/:name', getRuleByName);
 router.post('/rule/:name', selectRule);

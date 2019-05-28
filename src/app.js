@@ -12,6 +12,7 @@ const contextMiddleware = require('./middleware/functional/context');
 const ruleMiddleware = require('./middleware/functional/rule');
 const timeoutMiddleware = require('./middleware/functional/timeout');
 const decompressMiddleware = require('./middleware/functional/decompress');
+const verifyMiddleware = require('./middleware/functional/verify');
 
 process.on('uncaughtException', (e) => console.error(chalk.bgRed.black('[exception]'), e));
 process.on('unhandledRejection', (e) => console.error(chalk.bgRed.black('[rejection]'), e));
@@ -24,6 +25,7 @@ vanessa.use(panelMiddleware);
 vanessa.use(contextMiddleware);
 vanessa.use(ruleMiddleware);
 vanessa.use(decompressMiddleware);
+vanessa.use(verifyMiddleware);
 vanessa.use(timeoutMiddleware);
 
 const { port = 8099 } = argv;
