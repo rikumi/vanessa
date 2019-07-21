@@ -57,18 +57,22 @@ const serverProxyMiddleware = async (ctx, next) => {
         }
         ctx.summary.proxy = { socks: proxy.socks };
     } else {
-        // Use HTTP Proxy in advance of HTTPS proxy
+        // Which type of agent to use depends on the request protocol.
+        // Which proxy to use depends on the proxy protocol.
+        // Use HTTP Proxy in advance of HTTPS proxy.
         // Skip if the upstream proxy is vanessa itself.
         if (proxy.http && !isSelf(proxy.http)) {
             agent = agentPool.http[proxy.http];
             if (!agent) {
-                agent = agentPool.http[proxy.http] = new HTTPAgent(proxy.http);
+                agent = agentPool.http[proxy.http] =
+                    ctx.protocol === 'http' ? new HTTPAgent(proxy.http) : new HTTPSAgent(proxy.http);
             }
             ctx.summary.proxy = { http: proxy.http };
         } else if (proxy.https && !isSelf(proxy.https)) {
             agent = agentPool.https[proxy.https];
             if (!agent) {
-                agent = agentPool.https[proxy.https] = new HTTPSAgent(proxy.https);
+                agent = agentPool.https[proxy.https] =
+                    ctx.protocol === 'http' ? new HTTPAgent(proxy.https) : new HTTPSAgent(proxy.https);
             }
             ctx.summary.proxy = { https: proxy.https };
         } else {
