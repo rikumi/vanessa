@@ -8,6 +8,10 @@
 
 Vanessa 是一款简单但强大的 Web 代理抓包调试工具，由 rikumi 独立开发，同时也是我的本科毕业设计作品。
 
+Vanessa 的命名来自于 [Cytus II](https://zh.wikipedia.org/wiki/Cytus_II) 中的角色。在人工智慧被人类打败后的世界，智能机体 Vanessa 作为人类的俘虏，沉睡在荒草丛生的 Library 里，驱动着人类世界科技的正常运转，直到被醒来的同伴 Ivy 唤醒，开始了与人类和自我对抗的旅程。~~同时这个命名也意味着 Bug 很多。~~
+
+![Vanessa](https://user-images.githubusercontent.com/5051300/61588892-4ecdba80-abd5-11e9-936d-5e65e07aa9f5.png)
+
 Vanessa 的灵感来自 [Whistle](https://github.com/avwo/whistle)，部分实现代码参照了 [http-mitm-proxy](https://npmjs.com/http-mitm-proxy)，将其拆分为**支持作为代理的 Koa 服务器**以及**用于代理的各种内置中间件**两个部分进行实现。Vanessa 的功能与 Whistle 相比，可以参考下表。
 
 | 特性 | Whistle | Vanessa |
@@ -151,4 +155,4 @@ Vanessa 支持在请求时自动探测 Windows 和 macOS 的系统代理及环�
 
 因此，日常推荐的做法是，让系统代理保持第三方代理程序的设置，让 Vanessa 可以自动探测到它们，然后在 Chrome 浏览器中通过 SwitchyOmega 等浏览器插件连接 Vanessa 进行使用；
 
-如果你禁用了 Tencent iOA/V2Ray/ShadowSocks 等代理服务的自动设置系统代理功能（例如 Tencent iOA 进入调试模式，V2RayNG 设置为手动模式等），并将系统代理设置为 Vanessa，此时 Vanessa 将无法再自动检测第三方代理，会自动改为直连，需要手动书写中间件进行设置，或在 `~/Library/LaunchAgents/vanessa.plist` 中添加环境变量。
+如果你禁用了 Tencent iOA/V2Ray/ShadowSocks 等代理服务的自动设置系统代理功能（例如 Tencent iOA 进入调试模式，V2RayNG 设置为手动模式等），并将系统代理设置为 Vanessa，此时 Vanessa 将无法再自动检测第三方代理，会自动改为直连，需要[手动书写中间件进行设置](#上游代理链式代理)，或在 `~/Library/LaunchAgents/vanessa.plist` 中添加环境变量。
