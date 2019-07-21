@@ -1,4 +1,3 @@
-const { Middleware } = require('koa');
 const cp = require('child_process');
 
 const getSystemProxy = () => {

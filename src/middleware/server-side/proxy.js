@@ -1,10 +1,12 @@
-const { Middleware } = require('koa');
 const http = require('http');
 const https = require('https');
 const PACAgent = require('pac-proxy-agent');
 const HTTPAgent = require('http-proxy-agent');
 const HTTPSAgent = require('https-proxy-agent');
 const SOCKSAgent = require('socks-proxy-agent');
+const isLocalhost = require('../../util/is-localhost');
+const { argv } = require('yargs');
+const { port: vanessaPort = 8099 } = argv;
 
 const agentPool = {
     pac: {},
@@ -15,6 +17,15 @@ const agentPool = {
 
 const defaultHTTPSAgent = new https.Agent();
 const defaultHTTPAgent = new http.Agent();
+
+/**
+ * Detects whether a url is vanessa itself.
+ * @param {string} url The proxy url to be detected
+ */
+const isSelf = (url) => {
+    let [, host, port = 8080] = /([\d\.])+:?(\d+)/.exec(url) || [];
+    return isLocalhost(host) && port === vanessaPort;
+}
 
 const serverProxyMiddleware = async (ctx, next) => {
     let agent;
@@ -45,18 +56,10 @@ const serverProxyMiddleware = async (ctx, next) => {
             agent = agentPool.socks[proxy.socks] = new SOCKSAgent(proxy.socks);
         }
         ctx.summary.proxy = { type: 'SOCKS', address: proxy.socks };
-    } else if (ctx.protocol === 'https') {
-        if (proxy.https) {
-            agent = agentPool.https[proxy.https];
-            if (!agent) {
-                agent = agentPool.https[proxy.https] = new HTTPSAgent(proxy.https);
-            }
-            ctx.summary.proxy = { type: 'HTTPS', address: proxy.https };
-        } else {
-            agent = defaultHTTPSAgent;
-        }
     } else if (ctx.protocol === 'http') {
-        if (proxy.http) {
+        // Use HTTP Proxy in advance of HTTPS proxy
+        // Skip if the upstream proxy is vanessa itself.
+        if (proxy.http && !isSelf(proxy.http)) {
             agent = agentPool.http[proxy.http];
             if (!agent) {
                 agent = agentPool.http[proxy.http] = new HTTPAgent(proxy.http);
@@ -64,6 +67,18 @@ const serverProxyMiddleware = async (ctx, next) => {
             ctx.summary.proxy = { type: 'HTTP', address: proxy.http };
         } else {
             agent = defaultHTTPAgent;
+        }
+    } else if (ctx.protocol === 'https') {
+        // Vanessa should not be set as an HTTPS proxy,
+        // but detect anyway in case the user makes this mistake.
+        if (proxy.https && !isSelf(proxy.https)) {
+            agent = agentPool.https[proxy.https];
+            if (!agent) {
+                agent = agentPool.https[proxy.https] = new HTTPSAgent(proxy.https);
+            }
+            ctx.summary.proxy = { type: 'HTTPS', address: proxy.https };
+        } else {
+            agent = defaultHTTPSAgent;
         }
     }
     ctx.requestOptions.agent = agent;

@@ -1,5 +1,7 @@
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const mkdirp = require('mkdirp');
 const { pki, md } = require('node-forge');
 const { promisify } = require('util');
 const generateKeyPair = promisify(pki.rsa.generateKeyPair);
@@ -7,7 +9,7 @@ const generateKeyPair = promisify(pki.rsa.generateKeyPair);
 const CAattrs = [
     {
         name: 'commonName',
-        value: 'VanessaProxyCA'
+        value: 'VanessaProxyCA-' + Date.now()
     },
     {
         name: 'countryName',
@@ -134,9 +136,11 @@ const randomSerialNumber = () => {
     return sn;
 };
 
-const certFile = path.join(__dirname, 'ca.pem');
-const privateKeyFile = path.join(__dirname, 'ca.key');
-const publicKeyFile = path.join(__dirname, 'ca.pub');
+const configDir = path.join(os.homedir(), '.vanessa', 'certs');
+mkdirp.sync(configDir);
+const certFile = path.join(configDir, 'ca.pem');
+const privateKeyFile = path.join(configDir, 'ca.key');
+const publicKeyFile = path.join(configDir, 'ca.pub');
 
 const certs = {};
 
