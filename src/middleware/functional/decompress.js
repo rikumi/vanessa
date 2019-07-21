@@ -8,6 +8,7 @@ const decompressMiddleware = async (ctx, next) => {
         let unzip = encoding === 'br' ? decompressStream() : createUnzip();
         ctx.response._body = ctx.response.body.pipe(unzip);
         ctx.response.remove('content-encoding');
+        ctx.response.remove('content-length');
     }
 };
 

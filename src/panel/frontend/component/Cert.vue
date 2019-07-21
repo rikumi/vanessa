@@ -31,10 +31,11 @@
             <div class='steps macos' v-else-if='/Mac OS X/i.test(ua)'>
                 macOS: 
                 <ol>
-                    <li>Double-click the certificate file.</li>
+                    <li>Double-click the certificate file and install it to <b>System</b>.</li>
                     <li>You may be prompted for your password multiple times.</li>
                     <li>In <b>Keychain Access.app</b>, select <b>System</b> from <b>Keychains</b> and <b>Certificates</b> from <b>Category</b>.</li>
                     <li>Double-click <b>VanessaProxyCA</b>, change <b>Trust</b> - <b>When using this certificate</b> to <b>Always Trust</b>.</li>
+                    <li>Close the window.</li>
                 </ol>
             </div>
             <div class='steps linux' v-else-if='/Linux/i.test(ua)'>

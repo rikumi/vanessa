@@ -1,6 +1,6 @@
 {
   "name": "vanessa",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "An HTTPS MITM Proxy based on Koa.js",
   "main": "src/app.js",
   "repository": "https://github.com/rikumi/vanessa",
@@ -42,6 +42,7 @@
     "node-forge": "^0.8.2",
     "null-writable": "^1.0.0",
     "pac-proxy-agent": "^3.0.0",
+    "parcel": "^1.12.3",
     "path-to-regexp": "^3.0.0",
     "querystring": "^0.2.0",
     "raw-body": "^2.4.0",
@@ -70,7 +71,6 @@
     "@vue/component-compiler-utils": "^3.0.0",
     "autoprefixer": "^9.5.1",
     "babel-plugin-module-resolver": "^3.2.0",
-    "parcel": "^1.12.3",
     "pug": "^2.0.3",
     "vue-hot-reload-api": "^2.3.3",
     "vue-template-compiler": "^2.6.10"
