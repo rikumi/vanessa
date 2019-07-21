@@ -23,8 +23,8 @@ const defaultHTTPAgent = new http.Agent();
  * @param {string} url The proxy url to be detected
  */
 const isSelf = (url) => {
-    let [, host, port = 8080] = /([\d\.])+:?(\d+)/.exec(url) || [];
-    return isLocalhost(host) && port === vanessaPort;
+    let [, host, port = 8080] = /\/\/([^:\/]+):?(\d*)/.exec(url) || [];
+    return isLocalhost(host) && parseInt(port) === vanessaPort;
 }
 
 const serverProxyMiddleware = async (ctx, next) => {
@@ -49,14 +49,14 @@ const serverProxyMiddleware = async (ctx, next) => {
                 }), fn);
             };
         }
-        ctx.summary.proxy = { type: 'PAC', address: proxy.pac };
+        ctx.summary.proxy = { pac: proxy.pac };
     } else if (proxy.socks) {
         agent = agentPool.socks[proxy.socks];
         if (!agent) {
             agent = agentPool.socks[proxy.socks] = new SOCKSAgent(proxy.socks);
         }
-        ctx.summary.proxy = { type: 'SOCKS', address: proxy.socks };
-    } else if (ctx.protocol === 'http') {
+        ctx.summary.proxy = { socks: proxy.socks };
+    } else {
         // Use HTTP Proxy in advance of HTTPS proxy
         // Skip if the upstream proxy is vanessa itself.
         if (proxy.http && !isSelf(proxy.http)) {
@@ -64,23 +64,18 @@ const serverProxyMiddleware = async (ctx, next) => {
             if (!agent) {
                 agent = agentPool.http[proxy.http] = new HTTPAgent(proxy.http);
             }
-            ctx.summary.proxy = { type: 'HTTP', address: proxy.http };
-        } else {
-            agent = defaultHTTPAgent;
-        }
-    } else if (ctx.protocol === 'https') {
-        // Vanessa should not be set as an HTTPS proxy,
-        // but detect anyway in case the user makes this mistake.
-        if (proxy.https && !isSelf(proxy.https)) {
+            ctx.summary.proxy = { http: proxy.http };
+        } else if (proxy.https && !isSelf(proxy.https)) {
             agent = agentPool.https[proxy.https];
             if (!agent) {
                 agent = agentPool.https[proxy.https] = new HTTPSAgent(proxy.https);
             }
-            ctx.summary.proxy = { type: 'HTTPS', address: proxy.https };
+            ctx.summary.proxy = { https: proxy.https };
         } else {
-            agent = defaultHTTPSAgent;
+            agent = ctx.protocol === 'http' ? defaultHTTPAgent : defaultHTTPSAgent;
         }
     }
+    
     ctx.requestOptions.agent = agent;
     
     await next();
