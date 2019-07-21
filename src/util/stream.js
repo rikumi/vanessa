@@ -106,8 +106,8 @@ const getStreamOperations = (ctx, type) => {
             if (requestOrResponse.headers) {
                 let length = Number(requestOrResponse.headers['content-length']);
                 if (!Number.isNaN(length)) {
-                    length += data.length;
-                    requestOrResponse.headers['content-length'] = length.toString;
+                    length += Buffer.from(data).length;
+                    requestOrResponse.headers['content-length'] = length.toString();
                 }
             }
             let dup = new PassThrough();
@@ -120,8 +120,8 @@ const getStreamOperations = (ctx, type) => {
             if (requestOrResponse.headers) {
                 let length = Number(requestOrResponse.headers['content-length']);
                 if (!Number.isNaN(length)) {
-                    length += data.length;
-                    requestOrResponse.headers['content-length'] = length.toString;
+                    length += Buffer.from(data).length;
+                    requestOrResponse.headers['content-length'] = length.toString();
                 }
             }
             let dup = new PassThrough();
