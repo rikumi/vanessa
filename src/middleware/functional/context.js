@@ -1,3 +1,5 @@
+const os = require('os');
+const send = require('koa-send');
 const p2re = require('path-to-regexp');
 const { getStreamOperations } = require('../../util/stream');
 const AgingQueue = require('../../util/aging');
@@ -23,11 +25,7 @@ module.exports = async (ctx, next) => {
             }
 
             pattern = pattern.replace(/^(.*?)\/\//, '').replace(/^\//, ':host/');
-            let url = ctx.url.replace(/^(.*?)\/\//, '');
-
-            if (!/[?#].*$/.test(pattern)) {
-                url = url.replace(/[?#].*$/, '');
-            }
+            let url = ctx.url.replace(/^(.*?)\/\//, '').replace(/[?#].*$/, '');
 
             pattern = p2re(pattern, keys);
             result = pattern.exec(url);
@@ -36,6 +34,10 @@ module.exports = async (ctx, next) => {
         }
 
         throw new Error('Pattern must be RegExp or String.');
+    }
+
+    ctx.send = async (file) => {
+        await send(ctx, file.replace(/^~/, os.homedir()), { root: '/' });
     }
 
     Object.assign(ctx.request, getStreamOperations(ctx, 'request'));
