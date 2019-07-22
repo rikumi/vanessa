@@ -1,10 +1,11 @@
 const { getAllRuleNames, getRule } = require('../../util/rule');
 const isLocalhost = require('../../util/is-localhost');
 const { logsByRuleName } = require('../../util/console');
+const alphanumericComparator = require('../../util/alphanum');
 
 const getRules = async (ctx) => {
     let selected = ctx.session.selectedRules || [];
-    ctx.body = getAllRuleNames().map(k => {
+    ctx.body = getAllRuleNames().sort(alphanumericComparator).map(k => {
         return {
             name: k,
             isSelected: selected.includes(k)

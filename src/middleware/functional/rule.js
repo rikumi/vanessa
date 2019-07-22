@@ -4,9 +4,11 @@ const compose = require('koa-compose');
 const { getRule } = require('../../util/rule');
 const { log } = require('../../util/console');
 const createSandbox = require('../../sandbox');
+const alphanumericComparator = require('../../util/alphanum');
 
 const ruleMiddleware = async (ctx, next) => {
-    let selectedRules = ctx.session.selectedRules || [];
+    // Sort rules in alphanumerical order
+    let selectedRules = (ctx.session.selectedRules || []).sort(alphanumericComparator);
     
     let scripts = (await Promise.all(
         selectedRules.map(
