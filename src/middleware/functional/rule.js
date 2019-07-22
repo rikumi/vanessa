@@ -1,5 +1,4 @@
 const { NodeVM } = require('vm2');
-const { Middleware } = require('koa');
 const compose = require('koa-compose');
 
 const { getRule } = require('../../util/rule');

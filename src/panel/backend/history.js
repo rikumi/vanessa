@@ -1,4 +1,3 @@
-const { Middleware, Context } = require('koa');
 const isLocalhost = require('../../util/is-localhost');
 const { recentContexts } = require('../../middleware/functional/context');
 

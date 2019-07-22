@@ -1,4 +1,3 @@
-const { Middleware } = require('koa');
 const http = require('http');
 const https = require('https');
 const collect = require('collect-all');

@@ -1,5 +1,3 @@
-const { Middleware } = require('koa');
-
 const summaryMiddleware = async (ctx, next) => {
     let { method, url, header: reqHeaders } = ctx.request;
     ctx.summary.request = { method, url, headers: reqHeaders };

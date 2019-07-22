@@ -1,4 +1,3 @@
-const { Middleware } = require('koa');
 const os = require('os');
 const fs = require('fs');
 const util = require('util');

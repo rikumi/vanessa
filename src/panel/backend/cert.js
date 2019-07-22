@@ -1,4 +1,3 @@
-const { Middleware } = require('koa');
 const { createReadStream } = require('fs');
 const { recentContexts } = require('../../middleware/functional/context');
 const path = require('path');

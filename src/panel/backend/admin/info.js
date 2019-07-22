@@ -1,5 +1,4 @@
 const os = require('os');
-const { Middleware } = require('koa');
 const { version } = require('../../../../package.json');
 
 const startTime = Date.now();

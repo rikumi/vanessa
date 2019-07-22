@@ -1,4 +1,4 @@
-const { Stream, Readable, PassThrough } = require('stream');
+const { Readable, PassThrough } = require('stream');
 const streamReplace = require('replacestream');
 const streamCollect = require('raw-body');
 const streamThrottle = require('brake');
