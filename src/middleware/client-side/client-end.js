@@ -13,6 +13,7 @@ const clientEndMiddleware = async (ctx, next) => {
     }
 
     let _host = ctx.request.host;
+    let _querystring = ctx.request.querystring;
 
     Object.defineProperties(ctx.request, {
         url: {
@@ -41,6 +42,18 @@ const clientEndMiddleware = async (ctx, next) => {
                 if (ipPort && parseInt(ipPort[2]) !== 443) {
                     ctx.request.protocol = 'http';
                 }
+            }
+        },
+        query: {
+            value: qs.parse(_querystring),
+            writable: true
+        },
+        querystring: {
+            get() {
+                return qs.stringify(ctx.request.query);
+            },
+            set(querystring) {
+                ctx.request.query = qs.parse(querystring);
             }
         }
     });
