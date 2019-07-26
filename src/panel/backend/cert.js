@@ -1,10 +1,11 @@
 const { createReadStream } = require('fs');
 const { recentContexts } = require('../../middleware/functional/context');
 const path = require('path');
+const os = require('os');
 
 const downloadCert = (ctx) => {
     ctx.response.attachment('ca.pem');
-    ctx.body = createReadStream(path.join(__dirname, '..', '..', 'certs', 'ca.pem'));
+    ctx.body = createReadStream(path.join(os.homedir(), '.vanessa', 'certs', 'ca.pem'));
 };
 
 const trustHost = (ctx) => {
