@@ -72,7 +72,7 @@ Vanessa 的灵感来自 [Whistle](https://github.com/avwo/whistle)，部分实�
 
 ### 请求对象可写
 
-Koa 中，服务器本身作为请求的终点，请求的各项属性均为只读的，不可以更改（更改了也没有意义）；Vanessa 作为代理服务器，`ctx.request` 中的属性（`url`，`host`，`method` 等）均可以修改，修改后将会影响代理服务器请求远程服务器时的行为。
+Koa 中，服务器本身作为请求的终点，请求的各项属性均为只读的，不可以更改（更改了也没有意义）；Vanessa 作为代理服务器，`ctx.request` 中的属性（`url`、`host`、`method` 字符串，`query` 对象等）均可以修改，修改后将会影响代理服务器请求远程服务器时的行为。
 
 另外，由于 Koa 请求对象可能并不完整包含请求所需的所有参数，Vanessa 提供了附加配置对象 `ctx.requestOptions`，可在其中添加 `http.request()`（`https.request()`）支持的其它配置属性。
 
