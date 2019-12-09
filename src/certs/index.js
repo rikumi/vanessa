@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const cp = require('child_process');
 const mkdirp = require('mkdirp');
 const { pki, md } = require('node-forge');
 const { promisify } = require('util');
@@ -138,13 +139,14 @@ const randomSerialNumber = () => {
 
 const configDir = path.join(os.homedir(), '.vanessa', 'certs');
 mkdirp.sync(configDir);
-const certFile = path.join(configDir, 'ca.pem');
-const privateKeyFile = path.join(configDir, 'ca.key');
-const publicKeyFile = path.join(configDir, 'ca.pub');
+
+const certFile = path.join(configDir, 'ca-2048.pem');
+const privateKeyFile = path.join(configDir, 'ca-2048.key');
+const publicKeyFile = path.join(configDir, 'ca-2048.pub');
 
 const certs = {};
 
-(async () => {
+const beInitialized = (async () => {
     if (!fs.existsSync(certFile)) {
         let keys = await generateKeyPair({ bits: 2048 });
         let cert = pki.createCertificate();
@@ -164,52 +166,54 @@ const certs = {};
 
         certs.ca = {
             cert,
-            key: keys.privateKey,
-            pub: keys.publicKey
+            key: keys.privateKey
         };
+
+        cp.spawn(/^win/.test(process.platform) ? 'start' : 'open', [certFile]);
     } else {
         certs.ca = {
             cert: pki.certificateFromPem(fs.readFileSync(certFile)),
-            key: pki.privateKeyFromPem(fs.readFileSync(privateKeyFile)),
-            pub: pki.publicKeyFromPem(fs.readFileSync(publicKeyFile))
+            key: pki.privateKeyFromPem(fs.readFileSync(privateKeyFile))
         };
     }
 })();
 
-module.exports = new Proxy(certs, {
-    get(_, host) {
-        if (certs[host]) {
-            return certs[host];
-        }
+module.exports = async (host) => {
+    await beInitialized;
 
-        let keys = pki.rsa.generateKeyPair(1024);
-        let cert = pki.createCertificate();
-        cert.publicKey = keys.publicKey;
-        cert.serialNumber = randomSerialNumber();
-        cert.validity.notBefore = new Date();
-        cert.validity.notBefore.setDate(cert.validity.notBefore.getDate() - 1);
-        cert.validity.notAfter = new Date();
-        cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 2);
-        let attrs = ServerAttrs.slice(0);
-        attrs.unshift({
-            name: 'commonName',
-            value: host
-        });
-        cert.setSubject(attrs);
-        cert.setIssuer(certs.ca.cert.issuer.attributes);
-        cert.setExtensions(
-            ServerExtensions.concat([
-                {
-                    name: 'subjectAltName',
-                    altNames: [host.match(/^[\d\.]+$/) ? { type: 7, ip: host } : { type: 2, value: host }]
-                }
-            ])
-        );
-        cert.sign(certs.ca.key, md.sha256.create());
-        cert = pki.certificateToPem(cert);
-        let key = pki.privateKeyToPem(keys.privateKey);
-        let pub = pki.publicKeyToPem(keys.publicKey);
-
-        return (certs[host] = { cert, key, pub });
+    if (certs[host]) {
+        return certs[host];
     }
-});
+
+    let keys = pki.rsa.generateKeyPair(2048);
+    let cert = pki.createCertificate();
+    cert.publicKey = keys.publicKey;
+    cert.serialNumber = randomSerialNumber();
+    cert.validity.notBefore = new Date();
+    cert.validity.notBefore.setDate(cert.validity.notBefore.getDate() - 1);
+    cert.validity.notAfter = new Date();
+    cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 2);
+    let attrs = ServerAttrs.slice(0);
+    
+    attrs.unshift({
+        name: 'commonName',
+        value: host
+    });
+    
+    cert.setSubject(attrs);
+    cert.setIssuer(certs.ca.cert.issuer.attributes);
+    cert.setExtensions(
+        ServerExtensions.concat([
+            {
+                name: 'subjectAltName',
+                altNames: [host.match(/^[\d\.]+$/) ? { type: 7, ip: host } : { type: 2, value: host }]
+            }
+        ])
+    );
+    cert.sign(certs.ca.key, md.sha256.create());
+    cert = pki.certificateToPem(cert);
+    let key = pki.privateKeyToPem(keys.privateKey);
+    let pub = pki.publicKeyToPem(keys.publicKey);
+
+    return (certs[host] = { cert, key });
+}

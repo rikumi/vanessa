@@ -6,7 +6,7 @@ const url = require('url');
 const compose = require('koa-compose');
 const Koa = require('koa');
 
-const ca = require('./certs');
+const generateCert = require('./certs');
 const clientEndMiddleware = require('./middleware/client-side/client-end');
 const serverEndMiddleware = require('./middleware/server-side/server-end');
 const clientProxyMiddleware = require('./middleware/client-side/proxy');
@@ -77,7 +77,7 @@ module.exports = class Vanessa extends Koa {
         }
     }
 
-    onConnectData(req, socket, head) {
+    async onConnectData(req, socket, head) {
         const makeConnection = (port) => {
             // open a TCP connection to the remote host
             let conn = net.connect(
@@ -126,12 +126,12 @@ module.exports = class Vanessa extends Koa {
         */
         if (head[0] == 0x16 || head[0] == 0x80 || head[0] == 0x00) {
             let hostname = req.url.split(':', 2)[0];
-            let options = Object.assign(
-                {
-                    hosts: [hostname]
-                },
-                ca[hostname]
-            );
+            let { cert, key } = await generateCert(hostname);
+
+            let options = {
+                hosts: [hostname],
+                cert, key
+            };
 
             let httpsServer = https.createServer(options);
             httpsServer.on('error', (e) => this.emit('error', e));
