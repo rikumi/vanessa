@@ -2,9 +2,15 @@ const http = require('http');
 const https = require('https');
 const collect = require('collect-all');
 
+/**
+ * Import self-signed certificates from the system keychain.
+ */
+require('mac-ca');
+require('win-ca');
+
 const serverEndMiddleware = async (ctx) => {
     ctx.request.body = ctx.req;
-    
+
     let res = await new Promise((resolve, reject) => {
         let proto = ctx.protocol === 'https' ? https : http;
         let { method, host: hostport, path, querystring, headers } = ctx.request;
@@ -12,14 +18,14 @@ const serverEndMiddleware = async (ctx) => {
         if (querystring) {
             path += '?' + querystring;
         }
-        
+
         let [host, port] = hostport.split(':');
         port = port && parseInt(port) || { http: 80, https: 443 }[ctx.protocol];
 
         let options = Object.assign(ctx.requestOptions, {
             host, port, method, path, headers
         });
-        
+
         let req = proto.request(options, resolve);
         ctx.response.isSecure = true;
         req.on('error', (e) => {

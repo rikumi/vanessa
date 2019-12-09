@@ -171,8 +171,6 @@ const beInitialized = (async () => {
             cert,
             key: keypair.privateKey
         };
-
-        cp.spawn(/^win/.test(process.platform) ? 'start' : 'open', [certFile]);
     } else {
         certs.ca = {
             cert: pki.certificateFromPem(fs.readFileSync(certFile)),
@@ -196,12 +194,12 @@ module.exports = async (host) => {
     cert.validity.notAfter = new Date();
     cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 2);
     let attrs = ServerAttrs.slice(0);
-    
+
     attrs.unshift({
         name: 'commonName',
         value: host
     });
-    
+
     cert.setSubject(attrs);
     cert.setIssuer(certs.ca.cert.issuer.attributes);
     cert.setExtensions(

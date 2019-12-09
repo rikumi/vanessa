@@ -14,18 +14,18 @@ Vanessa 的命名来自于 [Cytus II](https://zh.wikipedia.org/wiki/Cytus_II) �
 
 Vanessa 的灵感来自 [Whistle](https://github.com/avwo/whistle)，部分实现代码参照了 [http-mitm-proxy](https://npmjs.com/http-mitm-proxy)，将其拆分为**支持作为代理的 Koa 服务器**以及**用于代理的各种内置中间件**两个部分进行实现。Vanessa 的功能与 Whistle 相比，可以参考下表。
 
-| 特性 | Whistle | Vanessa |
-|---|---|---|
-| 平台支持 | 全平台 | 理论全平台，仅测 macOS |
-| HTTP 抓包 | 支持 | 支持 |
-| HTTPS MITM 抓包 | 可选 | 强制开启 |
-| WebSocket 抓包 | 支持 | 仅代理，暂不支持抓包 |
-| 证书安装 | 自行安装 | HTTP 页面引导安装 |
-| 配置文件 | 支持，特殊语法 | **支持，Node Koa 中间件语法** |
-| 开机自启 | 不支持 | **自动配置** |
-| 上游代理 | 手动设置 | **自动检测（系统代理，环境变量代理）** |
-| 多用户 | 不支持 | **IP 多用户（共享配置，单独开关）** |
-| 插件 | 支持 | 暂不支持（后续将支持 npm 安装第三方 koa 中间件） |
+| 特性            | Whistle        | Vanessa                                          |
+| --------------- | -------------- | ------------------------------------------------ |
+| 平台支持        | 全平台         | 理论全平台，仅测 macOS                           |
+| HTTP 抓包       | 支持           | 支持                                             |
+| HTTPS MITM 抓包 | 可选           | 强制开启                                         |
+| WebSocket 抓包  | 支持           | 仅代理，暂不支持抓包                             |
+| 证书安装        | 自行安装       | HTTP 页面引导安装                                |
+| 配置文件        | 支持，特殊语法 | **支持，Node Koa 中间件语法**                    |
+| 开机自启        | 不支持         | **自动配置**                                     |
+| 上游代理        | 手动设置       | **自动检测（系统代理，环境变量代理）**           |
+| 多用户          | 不支持         | **IP 多用户（共享配置，单独开关）**              |
+| 插件            | 支持           | 暂不支持（后续将支持 npm 安装第三方 koa 中间件） |
 
 ## 安装
 
@@ -45,7 +45,13 @@ Vanessa 的灵感来自 [Whistle](https://github.com/avwo/whistle)，部分实�
 中间件会按照**数字优先排序**进行排序，这种排序方式类似于在常见的文件管理器（如 Finder）中看到的顺序，例如：
 
 ```javascript
-'1-test' < '2-test' < '10-foo' < '10-test' < '20-test1' < '20-test2' < '20-test222'
+'1-test' <
+  '2-test' <
+  '10-foo' <
+  '10-test' <
+  '20-test1' <
+  '20-test2' <
+  '20-test222';
 ```
 
 排在最前面的中间件将会最先执行，每一个中间件的 `next()` 方法将指向下一个中间件，以此类推。
@@ -93,7 +99,7 @@ Koa 中，服务器本身作为请求的终点，请求的各项属性均为只�
 
 这也就意味着，**客户端真实发来的请求**与**能解密得到 HTTP 报文的请求**分属于不同的连接。因为这样的特性，在中间件中获取原始请求中的客户端 IP 地址等属性会出现麻烦。
 
-因此，在Vanessa 中：
+因此，在 Vanessa 中：
 
 - 通过 `ctx.request.protocol` 可以获得客户端发来的原始请求的协议（`http` 或 `https`），并可以进行修改，改变最终发给真实远程服务器的请求协议；
 - 通过 `ctx.request.ip` 可以取得客户端的真实 IP；
@@ -105,42 +111,29 @@ Koa 中，服务器本身作为请求的终点，请求的各项属性均为只�
 
 ```javascript
 const cp = require('child_process');
+const detect = (cmd, keyword) => cp.execSync(cmd).includes(keyword);
+const detectOfficeWifi = detect.bind(
+  null,
+  '/Sy*/L*/Priv*/Apple8*/V*/C*/R*/a* -I',
+  'OfficeWiFi'
+);
+const detectVPN = detect.bind(null, 'ps -A', 'ScmClient');
 
-const getWifiName = () => {
-    return (/\sSSID:\s*(.+)/.exec(cp.execSync('/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport --getinfo')) || [])[1];
-}
-
-const isVPN = () => {
-    try {
-        cp.execSync('ps -A | grep ScmClient | grep -v grep');
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
+const NGN = 'http://localhost:12759';
+const V2Ray = 'http://localhost:8001';
 
 module.exports = async (ctx, next) => {
-    const startTime = Date.now();
-    const wifiName = getWifiName();
-
-    if (wifiName === 'Tencent-OfficeWiFi' || isVPN()) {
-        // 办公网代理
-        if (/\.oa\.com$/.test(ctx.hostname)) {
-            ctx.proxy = null;
-        } else {
-            ctx.proxy = 'http://txp-01.tencent.com/proxy_ngn.pac';
-        }
-    } else {
-        // 外网（含 StaffWiFi/Tencent-WiFi）代理
-        if (/\.oa\.com$/.test(ctx.hostname)) {
-            ctx.proxy = 'http://localhost:12639';
-        } else {
-            ctx.proxy = null;
-        }
-    }
-
-    console.log(`Set proxy to ${ ctx.proxy }, took ${ Date.now() - startTime }ms`);
-    await next();
+  const startTime = Date.now();
+  const isOfficeWifi = detectOfficeWifi();
+  const isIntranet = /\.(oa|wsd|server)\.com$|^1\d+\./.test(ctx.hostname);
+  const isVPN = detectVPN();
+  if (!isVPN && isOfficeWifi != isIntranet) {
+    ctx.proxy = NGN;
+  } else {
+    ctx.proxy = !isIntranet && V2Ray;
+  }
+  console.log(`Set proxy to ${ctx.proxy}, took ${Date.now() - startTime}ms`);
+  await next();
 };
 ```
 
@@ -150,17 +143,17 @@ module.exports = async (ctx, next) => {
 
 ```javascript
 module.exports = async (ctx, next) => {
-    console.log(ctx.url); // https://support.qq.com/products/28096
+  console.log(ctx.url); // https://support.qq.com/products/28096
 
-    ctx.test('https://support.qq.com/:route+'); // { route: 'products/28096' }
-    ctx.test('http://support.qq.com/:route+');  // null
-    ctx.test('//support.qq.com/:route+');       // { route: 'products/28096' }
-    ctx.test('support.qq.com/:route+');         // { route: 'products/28096' }
-    ctx.test('support.qq.com/:route');          // null
-    ctx.test(':sub.qq.com/:route+');            // { sub: 'support', route: 'products/28096' }
-    ctx.test('support.qq.com/products/:id');    // { id: '28096' }
-    await next();
-}
+  ctx.test('https://support.qq.com/:route+'); // { route: 'products/28096' }
+  ctx.test('http://support.qq.com/:route+'); // null
+  ctx.test('//support.qq.com/:route+'); // { route: 'products/28096' }
+  ctx.test('support.qq.com/:route+'); // { route: 'products/28096' }
+  ctx.test('support.qq.com/:route'); // null
+  ctx.test(':sub.qq.com/:route+'); // { sub: 'support', route: 'products/28096' }
+  ctx.test('support.qq.com/products/:id'); // { id: '28096' }
+  await next();
+};
 ```
 
 ### 发送本地文件
@@ -169,17 +162,17 @@ module.exports = async (ctx, next) => {
 
 ```javascript
 module.exports = async (ctx, next) => {
-    let res;
-    if (ctx.test('//docs.qq.com/sheet/(.+)')) {
-        await ctx.send('~/Documents/sheet/dev/html/pc.html');
-    } else if (res = ctx.test('//docs.qq.com/static/img/:route+')) {
-        await ctx.send('~/Documents/sheet/dev/img/' + res.route);
-    } else if (res = ctx.test('//docs.qq.com/static/dev/:route+')) {
-        await ctx.send('~/Documents/sheet/dev/' + res.route);
-    } else {
-        await next();
-    }
-}
+  let res;
+  if (ctx.test('//docs.qq.com/sheet/(.+)')) {
+    await ctx.send('~/Documents/sheet/dev/html/pc.html');
+  } else if ((res = ctx.test('//docs.qq.com/static/img/:route+'))) {
+    await ctx.send('~/Documents/sheet/dev/img/' + res.route);
+  } else if ((res = ctx.test('//docs.qq.com/static/dev/:route+'))) {
+    await ctx.send('~/Documents/sheet/dev/' + res.route);
+  } else {
+    await next();
+  }
+};
 ```
 
 ### 会话对象
@@ -192,10 +185,10 @@ Vanessa 借用了 Koa 的 `ctx.request.body` 和 `ctx.response.body` 两个对�
 
 ```javascript
 module.exports = async (ctx, next) => {
-    ctx.request.body = ctx.request.body.pipe(myDuplex);
-    await next();
-    ctx.response.body = ctx.response.body.pipe(myDuplex);
-}
+  ctx.request.body = ctx.request.body.pipe(myDuplex);
+  await next();
+  ctx.response.body = ctx.response.body.pipe(myDuplex);
+};
 ```
 
 特别说明，`ctx.req` 和 `ctx.res` 这两个属性在 Vanessa 中有特殊的用途，尽量不要对它们进行修改，否则可能导致未定义行为。

@@ -46,23 +46,9 @@ const serverProxyMiddleware = async (ctx, next) => {
         const proxyUrl = new URL(proxy);
 
         if (proxyUrl.pathname.length > 1) { // PAC
-            let key = proxy + '|' + ctx.hostname;
-            agent = agentPool.pac[key];
+            agent = agentPool.pac[proxy];
             if (!agent) {
-                agent = agentPool.pac[key] = new PACAgent(proxy);
-
-                // When a PAC file tells DIRECT, PACAgent will call `tls.connect` with customizable options,
-                // but no hostname is provided, resulting in missing SNI, in which case the remove server
-                // may not send back the proper certificate.
-
-                // We override the `connect` method of the agent to provide a proper hostname in options
-                // to be passed into `tls.connect`.
-                let connect = agent.callback.bind(agent);
-                agent.callback = (r, opts, fn) => {
-                    return connect(r, Object.assign(opts || {}, {
-                        servername: ctx.hostname
-                    }), fn);
-                };
+                agent = agentPool.pac[proxy] = new PACAgent(proxy);
             }
         } else if (proxyUrl.protocol.startsWith('socks')) {
             agent = agentPool.socks[proxy];
@@ -83,9 +69,9 @@ const serverProxyMiddleware = async (ctx, next) => {
             agent = defaultAgent;
         }
     }
-    
+
     ctx.requestOptions.agent = agent;
-    
+
     await next();
 };
 
