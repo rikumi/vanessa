@@ -146,11 +146,14 @@ const publicKeyFile = path.join(configDir, 'ca-2048.pub');
 
 const certs = {};
 
+let keypair;
+
 const beInitialized = (async () => {
+    keypair = await generateKeyPair({ bits: 2048 });
+
     if (!fs.existsSync(certFile)) {
-        let keys = await generateKeyPair({ bits: 2048 });
         let cert = pki.createCertificate();
-        cert.publicKey = keys.publicKey;
+        cert.publicKey = keypair.publicKey;
         cert.serialNumber = randomSerialNumber();
         cert.validity.notBefore = new Date();
         cert.validity.notBefore.setDate(cert.validity.notBefore.getDate() - 1);
@@ -159,14 +162,14 @@ const beInitialized = (async () => {
         cert.setSubject(CAattrs);
         cert.setIssuer(CAattrs);
         cert.setExtensions(CAextensions);
-        cert.sign(keys.privateKey, md.sha256.create());
+        cert.sign(keypair.privateKey, md.sha256.create());
         fs.writeFileSync(certFile, pki.certificateToPem(cert));
-        fs.writeFileSync(privateKeyFile, pki.privateKeyToPem(keys.privateKey));
-        fs.writeFileSync(publicKeyFile, pki.publicKeyToPem(keys.publicKey));
+        fs.writeFileSync(privateKeyFile, pki.privateKeyToPem(keypair.privateKey));
+        fs.writeFileSync(publicKeyFile, pki.publicKeyToPem(keypair.publicKey));
 
         certs.ca = {
             cert,
-            key: keys.privateKey
+            key: keypair.privateKey
         };
 
         cp.spawn(/^win/.test(process.platform) ? 'start' : 'open', [certFile]);
@@ -185,9 +188,8 @@ module.exports = async (host) => {
         return certs[host];
     }
 
-    let keys = pki.rsa.generateKeyPair(2048);
     let cert = pki.createCertificate();
-    cert.publicKey = keys.publicKey;
+    cert.publicKey = keypair.publicKey;
     cert.serialNumber = randomSerialNumber();
     cert.validity.notBefore = new Date();
     cert.validity.notBefore.setDate(cert.validity.notBefore.getDate() - 1);
@@ -212,8 +214,8 @@ module.exports = async (host) => {
     );
     cert.sign(certs.ca.key, md.sha256.create());
     cert = pki.certificateToPem(cert);
-    let key = pki.privateKeyToPem(keys.privateKey);
-    let pub = pki.publicKeyToPem(keys.publicKey);
+    let key = pki.privateKeyToPem(keypair.privateKey);
+    let pub = pki.publicKeyToPem(keypair.publicKey);
 
     return (certs[host] = { cert, key });
 }
