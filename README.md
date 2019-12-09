@@ -105,16 +105,25 @@ Koa 中，服务器本身作为请求的终点，请求的各项属性均为只�
 
 ```javascript
 const cp = require('child_process');
-const shellStr = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport --getinfo';
+
 const getWifiName = () => {
-    return (/\sSSID:\s*(.+)/.exec(cp.execSync(shellStr)) || [])[1];
+    return (/\sSSID:\s*(.+)/.exec(cp.execSync('/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport --getinfo')) || [])[1];
+}
+
+const isVPN = () => {
+    try {
+        cp.execSync('ps -A | grep ScmClient | grep -v grep');
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 module.exports = async (ctx, next) => {
+    const startTime = Date.now();
     const wifiName = getWifiName();
-    ctx.wifiName = wifiName;
 
-    if (wifiName === 'Tencent-OfficeWiFi') {
+    if (wifiName === 'Tencent-OfficeWiFi' || isVPN()) {
         // 办公网代理
         if (/\.oa\.com$/.test(ctx.hostname)) {
             ctx.proxy = null;
@@ -124,11 +133,13 @@ module.exports = async (ctx, next) => {
     } else {
         // 外网（含 StaffWiFi/Tencent-WiFi）代理
         if (/\.oa\.com$/.test(ctx.hostname)) {
-            ctx.proxy = 'http://localhost:12759';
+            ctx.proxy = 'http://localhost:12639';
         } else {
             ctx.proxy = null;
         }
     }
+
+    console.log(`Set proxy to ${ ctx.proxy }, took ${ Date.now() - startTime }ms`);
     await next();
 };
 ```
