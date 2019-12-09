@@ -183,7 +183,7 @@ export default {
             if (history && this.editorLeaveConfirm()) {
                 this.showingInfo = null;
                 this.showingRule = null;
-                this.editorSetContent('#' + history.id, {
+                this.editorSetContent('Context #' + history.id, {
                     ...this.showingHistory,
                     logs: undefined
                 }, false);

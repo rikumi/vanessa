@@ -10,9 +10,6 @@ const getBanner = (ctx, trusted) => `<!DOCTYPE html>
 `;
 
 const insecureBannerMiddleware = async (ctx, next) => {
-    let { method, url, header: reqHeaders } = ctx.request;
-    ctx.summary.request = { method, url, headers: reqHeaders };
-
     await next();
 
     if (!ctx.response.isSecure) {

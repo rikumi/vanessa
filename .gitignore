@@ -13,3 +13,5 @@ dist
 *.key
 *.pem
 *.pub
+package-lock.json
+yarn.lock

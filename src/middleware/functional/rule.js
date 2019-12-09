@@ -69,7 +69,7 @@ const ruleMiddleware = async (ctx, next) => {
         }
     }
 
-    ctx.summary.rules = selectedRules;
+    ctx.rules = selectedRules;
     let composed = compose(middleware);
     await composed(ctx, next);
 };

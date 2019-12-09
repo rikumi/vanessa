@@ -34,16 +34,7 @@ const getHistoryDetail = (ctx) => {
     } else if (!shouldShow(ctx, detail)) {
         ctx.throw(403);
     } else {
-        let { summary, request, response } = detail;
-        if (!detail.res.finished) {
-            response = {};
-        }
-        ctx.body = {
-            id,
-            request,
-            response,
-            ...summary
-        };
+        ctx.body = { ...detail };
     }
 };
 

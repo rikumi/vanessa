@@ -70,7 +70,6 @@ const clientEndMiddleware = async (ctx, next) => {
     });
     
     ctx.phase = 'request';
-    ctx.summary = {};
     ctx.requestOptions = {};
     ctx.rawReq = ctx.req;
 
@@ -84,7 +83,13 @@ const clientEndMiddleware = async (ctx, next) => {
             if (typeof ctx.response.body.pipe !== 'function') {
                 if (!Buffer.isBuffer(ctx.response.body)) {
                     if (typeof ctx.response.body !== 'string') {
-                        ctx.response.body = stringify(ctx.response.body);
+                        if (
+                            typeof ctx.response.body === 'object' &&
+                            !Array.isArray(ctx.response.body)
+                        ) {
+                            ctx.response.body = { ...ctx.response.body };
+                        }
+                        ctx.response.body = stringify(ctx.response.body, (k, v) => /^_/.test(k) ? undefined : v);
                     }
                     ctx.response.body = Buffer.from(ctx.response.body);
                 }
@@ -95,8 +100,8 @@ const clientEndMiddleware = async (ctx, next) => {
     } catch (e) {
         ctx.body = e.stack;
         ctx.status = typeof e.code === 'number' ? e.code : 500;
-        ctx.summary.logs = ctx.summary.logs || [];
-        ctx.summary.logs.push({ type: 'error', content: e.stack });
+        ctx.logs = ctx.logs || [];
+        ctx.logs.push({ type: 'error', content: e.stack });
     }
 }
 

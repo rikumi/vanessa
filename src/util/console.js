@@ -8,8 +8,8 @@ const log = (ctx, rule, type, ...content) => {
     }
     content = content.join(' ');
 
-    ctx.summary.logs = ctx.summary.logs || [];
-    ctx.summary.logs.push({ rule, type, content });
+    ctx.logs = ctx.logs || [];
+    ctx.logs.push({ rule, type, content });
 
     logsByRuleName[rule] = logsByRuleName[rule] || new AgingQueue(1024);
     logsByRuleName[rule].push({ ctxId: ctx.id, ip: ctx.ip, type, content });

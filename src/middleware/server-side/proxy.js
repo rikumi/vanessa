@@ -8,7 +8,8 @@ const isLocalhost = require('../../util/is-localhost');
 const { argv } = require('yargs');
 const { port: vanessaPort = 8099 } = argv;
 
-const agentPool = {
+const defaultHTTPAgent = new http.Agent();
+const httpAgentPool = {
     pac: {},
     http: {},
     https: {},
@@ -16,13 +17,18 @@ const agentPool = {
 };
 
 const defaultHTTPSAgent = new https.Agent();
-const defaultHTTPAgent = new http.Agent();
+const httpsAgentPool = {
+    pac: {},
+    http: {},
+    https: {},
+    socks: {}
+};
 
 /**
  * Detects whether a url is vanessa itself.
  * @param {string} url The proxy url to be detected
  */
-const isSelf = (url) => {
+const isVanessaSelf = (url) => {
     let [, host, port = 8080] = /\/\/([^:\/]+):?(\d*)/.exec(url) || [];
     return isLocalhost(host) && parseInt(port) === vanessaPort;
 }
@@ -30,53 +36,51 @@ const isSelf = (url) => {
 const serverProxyMiddleware = async (ctx, next) => {
     let agent;
     let { proxy } = ctx.request;
-    if (proxy.pac) {
-        let key = proxy.pac + '|' + ctx.hostname;
-        agent = agentPool.pac[key];
-        if (!agent) {
-            agent = agentPool.pac[key] = new PACAgent(proxy.pac);
 
-            // When a PAC file tells DIRECT, PACAgent will call `tls.connect` with customizable options,
-            // but no hostname is provided, resulting in missing SNI, in which case the remove server
-            // may not send back the proper certificate.
+    const isHttp = ctx.protocol === 'http';
+    const RequestAgent = isHttp ? HTTPAgent : HTTPSAgent;
+    const agentPool = isHttp ? httpAgentPool : httpsAgentPool;
+    const defaultAgent = isHttp ? defaultHTTPAgent : defaultHTTPSAgent;
 
-            // We override the `connect` method of the agent to provide a proper hostname in options
-            // to be passed into `tls.connect`.
-            let connect = agent.callback.bind(agent);
-            agent.callback = (r, opts, fn) => {
-                return connect(r, Object.assign(opts || {}, {
-                    servername: ctx.hostname
-                }), fn);
-            };
-        }
-        ctx.summary.proxy = { pac: proxy.pac };
-    } else if (proxy.socks) {
-        agent = agentPool.socks[proxy.socks];
-        if (!agent) {
-            agent = agentPool.socks[proxy.socks] = new SOCKSAgent(proxy.socks);
-        }
-        ctx.summary.proxy = { socks: proxy.socks };
-    } else {
-        // Which type of agent to use depends on the request protocol.
-        // Which proxy to use depends on the proxy protocol.
-        // Use HTTP Proxy in advance of HTTPS proxy.
-        // Skip if the upstream proxy is vanessa itself.
-        if (proxy.http && !isSelf(proxy.http)) {
-            agent = agentPool.http[proxy.http];
+    if (proxy) {
+        const proxyUrl = new URL(proxy);
+
+        if (proxyUrl.pathname.length > 1) { // PAC
+            let key = proxy + '|' + ctx.hostname;
+            agent = agentPool.pac[key];
             if (!agent) {
-                agent = agentPool.http[proxy.http] =
-                    ctx.protocol === 'http' ? new HTTPAgent(proxy.http) : new HTTPSAgent(proxy.http);
+                agent = agentPool.pac[key] = new PACAgent(proxy);
+
+                // When a PAC file tells DIRECT, PACAgent will call `tls.connect` with customizable options,
+                // but no hostname is provided, resulting in missing SNI, in which case the remove server
+                // may not send back the proper certificate.
+
+                // We override the `connect` method of the agent to provide a proper hostname in options
+                // to be passed into `tls.connect`.
+                let connect = agent.callback.bind(agent);
+                agent.callback = (r, opts, fn) => {
+                    return connect(r, Object.assign(opts || {}, {
+                        servername: ctx.hostname
+                    }), fn);
+                };
             }
-            ctx.summary.proxy = { http: proxy.http };
-        } else if (proxy.https && !isSelf(proxy.https)) {
-            agent = agentPool.https[proxy.https];
+        } else if (proxyUrl.protocol.startsWith('socks')) {
+            agent = agentPool.socks[proxy];
             if (!agent) {
-                agent = agentPool.https[proxy.https] =
-                    ctx.protocol === 'http' ? new HTTPAgent(proxy.https) : new HTTPSAgent(proxy.https);
+                agent = agentPool.socks[proxy] = new SOCKSAgent(proxy);
             }
-            ctx.summary.proxy = { https: proxy.https };
+        } else if (proxyUrl.protocol.startsWith('https') && !isVanessaSelf(proxy)) {
+            agent = agentPool.https[proxy];
+            if (!agent) {
+                agent = agentPool.https[proxy] = new RequestAgent(proxy);
+            }
+        } else if (proxyUrl.protocol.startsWith('http') && !isVanessaSelf(proxy)) {
+            agent = agentPool.http[proxy];
+            if (!agent) {
+                agent = agentPool.http[proxy] = new RequestAgent(proxy);
+            }
         } else {
-            agent = ctx.protocol === 'http' ? defaultHTTPAgent : defaultHTTPSAgent;
+            agent = defaultAgent;
         }
     }
     
