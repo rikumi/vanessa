@@ -39,7 +39,7 @@ const getSystemProxy = () => {
     return normalizeUrl(
         pac ||
         HTTPProxy && 'http://' + HTTPProxy + ':' + HTTPPort ||
-        HTTPS_PROXY && 'https://' + HTTPSProxy + ':' + HTTPSPort ||
+        HTTPSProxy && 'https://' + HTTPSProxy + ':' + HTTPSPort ||
         SOCKSProxy && 'socks://' + SOCKSProxy + ':' + SOCKSPort ||
         env.HTTP_PROXY || env.http_proxy ||
         env.HTTPS_PROXY || env.https_proxy ||
