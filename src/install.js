@@ -13,7 +13,7 @@ const startup = require('user-startup');
         console.error('[!] Please install vanessa without sudo. Exiting.');
     } else {
         const rl = readline.createInterface(process.stdin, process.stdout);
-        const question = util.promisify(rl.question).bind(rl);
+        const question = (q) => new Promise(r => rl.question(q, r));
 
         const nodePath = process.execPath;
         const scriptPath = path.join(__dirname, 'app.js');
