@@ -22,7 +22,7 @@ const clientEndMiddleware = async (ctx, next) => {
             },
             set(url) {
                 let { protocol, host, pathname, search } = new URL(url);
-                ctx.request.protocol = protocol;
+                ctx.request.protocol = protocol.replace(/:$/, '');
                 ctx.request.header.host = host;
                 ctx.request.path = pathname;
                 ctx.request.search = search;
