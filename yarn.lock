@@ -6608,8 +6608,9 @@ vm-browserify@0.0.4:
     indexof "0.0.1"
 
 vm2@^3.8.1:
-  version "3.8.1"
-  resolved "https://registry.yarnpkg.com/vm2/-/vm2-3.8.1.tgz#82ac7845009aee79852429da49f0f4f114c644e5"
+  version "3.9.4"
+  resolved "https://registry.yarnpkg.com/vm2/-/vm2-3.9.4.tgz#2e118290fefe7bd8ea09ebe2f5faf53730dbddaa"
+  integrity sha512-sOdharrJ7KEePIpHekiWaY1DwgueuiBeX/ZBJUPgETsVlJsXuEx0K0/naATq2haFvJrvZnRiORQRubR0b7Ye6g==
 
 void-elements@^2.0.1:
   version "2.0.1"
